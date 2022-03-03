@@ -15,7 +15,7 @@
 #pragma region Lab/Milestone Includes
 #ifdef W3
 #include "Scenes/Week 3/MinionScene.h"
-//#include "Scenes/Week 3/ComponentTestScene.h"
+#include "Scenes/Week 3/ComponentTestScene.h"
 //#include "Scenes/Week 3/PongScene.h"
 #endif
 
@@ -71,8 +71,8 @@ void MainGame::OnGamePreparing(const GameContext& /*gameContext*/)
 void MainGame::Initialize()
 {
 #ifdef W3
-	SceneManager::Get()->AddGameScene(new MinionScene());
-	//SceneManager::Get()->AddGameScene(new ComponentTestScene());
+	//SceneManager::Get()->AddGameScene(new MinionScene());
+	SceneManager::Get()->AddGameScene(new ComponentTestScene());
 	//SceneManager::Get()->AddGameScene(new PongScene());
 #endif
 
@@ -120,13 +120,13 @@ void MainGame::Initialize()
 LRESULT MainGame::WindowProcedureHook(HWND /*hWnd*/, UINT message, WPARAM wParam, LPARAM lParam)
 {
 
-	if(message == WM_KEYUP)
+	if (message == WM_KEYUP)
 	{
 		if ((lParam & 0x80000000) != 0x80000000)
 			return -1;
 
 		//[F1] Toggle Scene Info Overlay
-		if(wParam == VK_F1)
+		if (wParam == VK_F1)
 		{
 			const auto pScene = SceneManager::Get()->GetActiveScene();
 			pScene->GetSceneSettings().Toggle_ShowInfoOverlay();
@@ -162,7 +162,7 @@ LRESULT MainGame::WindowProcedureHook(HWND /*hWnd*/, UINT message, WPARAM wParam
 			pScene->GetPhysxProxy()->NextPhysXFrame();
 		}
 	}
-	
+
 
 	return -1;
 }

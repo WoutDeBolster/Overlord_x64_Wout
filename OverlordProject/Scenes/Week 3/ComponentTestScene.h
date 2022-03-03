@@ -3,7 +3,7 @@
 class ComponentTestScene : public GameScene
 {
 public:
-	ComponentTestScene() : GameScene(L"ComponentTestScene") {}
+	ComponentTestScene();
 	~ComponentTestScene() override = default;
 
 	ComponentTestScene(const ComponentTestScene& other) = delete;

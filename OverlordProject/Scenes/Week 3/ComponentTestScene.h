@@ -1,6 +1,6 @@
 #pragma once
 
-class ComponentTestScene : public GameScene
+class ComponentTestScene final : public GameScene
 {
 public:
 	ComponentTestScene();

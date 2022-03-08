@@ -16,7 +16,7 @@
 #ifdef W3
 #include "Scenes/Week 3/MinionScene.h"
 #include "Scenes/Week 3/ComponentTestScene.h"
-//#include "Scenes/Week 3/PongScene.h"
+#include "Scenes/Week 3/PongScene.h"
 #endif
 
 #ifdef W4
@@ -71,9 +71,9 @@ void MainGame::OnGamePreparing(const GameContext& /*gameContext*/)
 void MainGame::Initialize()
 {
 #ifdef W3
-	//SceneManager::Get()->AddGameScene(new MinionScene());
+	SceneManager::Get()->AddGameScene(new PongScene());
 	SceneManager::Get()->AddGameScene(new ComponentTestScene());
-	//SceneManager::Get()->AddGameScene(new PongScene());
+	SceneManager::Get()->AddGameScene(new MinionScene());
 #endif
 
 #ifdef W4

@@ -2,7 +2,7 @@
 #include "Base/Structs.h"
 class GameScene;
 
-class PhysxProxy final: public PxSimulationEventCallback
+class PhysxProxy final : public PxSimulationEventCallback
 {
 public:
 	PhysxProxy() = default;
@@ -15,7 +15,7 @@ public:
 
 	PxScene* GetPhysxScene() const { return m_pPhysxScene; }
 
-	void AddActor(PxActor& actor) const { if(m_pPhysxScene)m_pPhysxScene->addActor(actor); }
+	void AddActor(PxActor& actor) const { if (m_pPhysxScene)m_pPhysxScene->addActor(actor); }
 
 	PxControllerManager* GetControllerManager() const { return m_pControllerManager; }
 
@@ -27,11 +27,11 @@ public:
 	void Update(const SceneContext& sceneContext) const;
 	void Draw(const SceneContext& sceneContext) const;
 	bool Raycast(const PxVec3& origin, const PxVec3& unitDir, PxReal distance,
-	             PxRaycastCallback& hitCall,
-	             PxHitFlags hitFlags = PxHitFlags(PxHitFlag::eDEFAULT),
-	             const PxQueryFilterData& filterData = PxQueryFilterData(),
-	             PxQueryFilterCallback* filterCall = nullptr,
-	             const PxQueryCache* cache = nullptr) const;
+		PxRaycastCallback& hitCall,
+		PxHitFlags hitFlags = PxHitFlags(PxHitFlag::eDEFAULT),
+		const PxQueryFilterData& filterData = PxQueryFilterData(),
+		PxQueryFilterCallback* filterCall = nullptr,
+		const PxQueryCache* cache = nullptr) const;
 
 private:
 	void onConstraintBreak(PxConstraintInfo* /*constraints*/, PxU32 /*count*/) override {};

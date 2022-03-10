@@ -16,9 +16,19 @@ protected:
 	void Update() override;
 
 private:
+	void Reset();
+
 	GameObject* m_pBall{};
 	GameObject* m_pCubeLeft{};
 	GameObject* m_pCubeRight{};
+
+	GameObject* m_TriggerWallLeft{};
+	GameObject* m_TriggerWallRight{};
+
+	GameObject* m_WallTop{};
+	GameObject* m_WallBottom{};
+
+	float m_MovementSpeed{ 10.f };
 
 	enum InputActions
 	{
@@ -27,6 +37,7 @@ private:
 		LeftPeddle_Up,
 		LeftPeddle_Down,
 		LaunchBall,
+		ResetButton,
 	};
 };
 

@@ -16,6 +16,8 @@ void PongScene::Initialize()
 
 	m_SceneContext.settings.enableOnGUI = true;
 
+	auto& physX = PxGetPhysics();
+
 	auto pBouncyMat = PxGetPhysics().createMaterial(0.f, 0.f, 1.f);
 	auto pNormalMat = PxGetPhysics().createMaterial(0.f, 0.f, 0.f);
 
@@ -30,12 +32,12 @@ void PongScene::Initialize()
 	AddChild(camEmpty);
 	SetActiveCamera(cam);
 
-
 	// ball
-	m_pBall = new GameObject();
-	m_pBall->AddChild<SpherePrefab>(new SpherePrefab(1.f, 10, XMFLOAT4(Colors::Red)));
+	m_pBall = AddChild(new SpherePrefab(1.f, 10, XMFLOAT4(Colors::Red)));
 	auto pSphereActor = m_pBall->AddComponent(new RigidBodyComponent(false));
 	pSphereActor->AddCollider(PxSphereGeometry{ 1.f }, *pBouncyMat);
+	pSphereActor->SetConstraint(RigidBodyConstraint::TransZ, true);
+	pSphereActor->GetPxRigidActor()->setActorFlag(PxActorFlag::eDISABLE_GRAVITY, true);
 
 	m_pBall->GetTransform()->Translate(0.f, 5.f, 0.f);
 
@@ -44,23 +46,49 @@ void PongScene::Initialize()
 	m_pCubeLeft = new GameObject();
 	m_pCubeLeft = AddChild(new CubePrefab(paddleDim, XMFLOAT4(Colors::Gray)));
 	auto pCubeActorLeft = m_pCubeLeft->AddComponent(new RigidBodyComponent(false));
-	pCubeActorLeft->AddCollider(PxBoxGeometry{ paddleDim.x / 2.f, paddleDim.y / 2.f, paddleDim.z / 2.f }, *pNormalMat);
+	pCubeActorLeft->AddCollider(PxBoxGeometry{ paddleDim.x / 2.f, paddleDim.y / 2.f, paddleDim.z / 2.f }, *pBouncyMat);
 	pCubeActorLeft->SetConstraint(RigidBodyConstraint::TransX, true);
 	pCubeActorLeft->SetConstraint(RigidBodyConstraint::TransZ, true);
 	pCubeActorLeft->SetConstraint(RigidBodyConstraint::AllRot, true);
+	pCubeActorLeft->GetPxRigidActor()->setActorFlag(PxActorFlag::eDISABLE_GRAVITY, true);
+	pCubeActorLeft->SetKinematic(true);
 
-	m_pCubeLeft->GetTransform()->Translate(-30.f, 1.f, 0.f);
+	m_pCubeLeft->GetTransform()->Translate(-30.f, 5.f, 0.f);
 
 
 	m_pCubeRight = new GameObject();
 	m_pCubeRight = AddChild(new CubePrefab(paddleDim, XMFLOAT4(Colors::Gray)));
 	auto pCubeActorRight = m_pCubeRight->AddComponent(new RigidBodyComponent(false));
-	pCubeActorRight->AddCollider(PxBoxGeometry{ paddleDim.x / 2.f, paddleDim.y / 2.f, paddleDim.z / 2.f }, *pNormalMat);
+	pCubeActorRight->AddCollider(PxBoxGeometry{ paddleDim.x / 2.f, paddleDim.y / 2.f, paddleDim.z / 2.f }, *pBouncyMat);
 	pCubeActorRight->SetConstraint(RigidBodyConstraint::TransX, true);
 	pCubeActorRight->SetConstraint(RigidBodyConstraint::TransZ, true);
 	pCubeActorRight->SetConstraint(RigidBodyConstraint::AllRot, true);
+	pCubeActorRight->GetPxRigidActor()->setActorFlag(PxActorFlag::eDISABLE_GRAVITY, true);
+	pCubeActorRight->SetKinematic(true);
 
-	m_pCubeRight->GetTransform()->Translate(30.f, 1.f, 0.f);
+	m_pCubeRight->GetTransform()->Translate(30.f, 5.f, 0.f);
+
+	// horizontal walls
+	auto pWallActor = physX.createRigidStatic(PxTransform(0.f, 0.f, 20.f));
+	auto pWallShape = PxRigidActorExt::createExclusiveShape(*pWallActor, PxBoxGeometry(100.f, 10.f, 1.f), *pBouncyMat);
+	GetPhysxProxy()->AddActor(*pWallActor);
+
+	pWallActor = physX.createRigidStatic(PxTransform(0.f, 0.f, -20.f));
+	pWallShape = PxRigidActorExt::createExclusiveShape(*pWallActor, PxBoxGeometry(100.f, 10.f, 1.f), *pBouncyMat);
+	GetPhysxProxy()->AddActor(*pWallActor);
+
+	// triggers
+	pWallActor = physX.createRigidStatic(PxTransform(38.f, 0.f, 0.f));
+	pWallShape = PxRigidActorExt::createExclusiveShape(*pWallActor, PxBoxGeometry(1.f, 10.f, 20.f), *pBouncyMat);
+	pWallShape->setFlag(PxShapeFlag::eSIMULATION_SHAPE, false);
+	pWallShape->setFlag(PxShapeFlag::eTRIGGER_SHAPE, true);
+	GetPhysxProxy()->AddActor(*pWallActor);
+
+	pWallActor = physX.createRigidStatic(PxTransform(-38.f, 0.f, 0.f));
+	pWallShape = PxRigidActorExt::createExclusiveShape(*pWallActor, PxBoxGeometry(1.f, 10.f, 20.f), *pBouncyMat);
+	pWallShape->setFlag(PxShapeFlag::eSIMULATION_SHAPE, false);
+	pWallShape->setFlag(PxShapeFlag::eTRIGGER_SHAPE, true);
+	GetPhysxProxy()->AddActor(*pWallActor);
 
 	// input
 	const auto inputAction1 = InputAction(InputActions::RightPeddle_Up, InputState::down, VK_UP);
@@ -77,31 +105,55 @@ void PongScene::Initialize()
 
 	const auto inputAction5 = InputAction(InputActions::LaunchBall, InputState::released, VK_SPACE);
 	m_SceneContext.pInput->AddInputAction(inputAction5);
+
+	const auto inputAction6 = InputAction(InputActions::ResetButton, InputState::released, 'R');
+	m_SceneContext.pInput->AddInputAction(inputAction6);
+}
+
+inline XMFLOAT3 AddVector(XMFLOAT3 a, XMFLOAT3 b)
+{
+	return XMFLOAT3{ a.x + b.x, a.y + b.y, a.z + b.z };
 }
 
 void PongScene::Update()
 {
+	XMFLOAT3 movement = XMFLOAT3{ 0.f, 0.f, m_MovementSpeed * GetSceneContext().pGameTime->GetElapsed() };
+	XMFLOAT3 reversedMovement = movement;
+	reversedMovement.z = -reversedMovement.z;
+
 	if (m_SceneContext.pInput->IsActionTriggered(InputActions::RightPeddle_Up))
 	{
-		m_pCubeRight->GetComponent<RigidBodyComponent>()->AddForce({ 0.f, 0.f, 5.f }, physx::PxForceMode::eFORCE);
+		m_pCubeRight->GetTransform()->Translate(AddVector(m_pCubeRight->GetTransform()->GetPosition(), movement));
 	}
 	if (m_SceneContext.pInput->IsActionTriggered(InputActions::RightPeddle_Down))
 	{
-		m_pCubeRight->GetComponent<RigidBodyComponent>()->AddForce({ 0.f, 0.f, -5.f }, physx::PxForceMode::eFORCE);
+		m_pCubeRight->GetTransform()->Translate(AddVector(m_pCubeRight->GetTransform()->GetPosition(), reversedMovement));
 	}
 
 	if (m_SceneContext.pInput->IsActionTriggered(InputActions::LeftPeddle_Up))
 	{
-		m_pCubeLeft->GetComponent<RigidBodyComponent>()->AddForce({ 0.f, 0.f, 5.f }, physx::PxForceMode::eFORCE);
+		m_pCubeLeft->GetTransform()->Translate(AddVector(m_pCubeLeft->GetTransform()->GetPosition(), movement));
 	}
 	if (m_SceneContext.pInput->IsActionTriggered(InputActions::LeftPeddle_Down))
 	{
-		m_pCubeLeft->GetComponent<RigidBodyComponent>()->AddForce({ 0.f, 0.f, -5.f }, physx::PxForceMode::eFORCE);
+		m_pCubeLeft->GetTransform()->Translate(AddVector(m_pCubeLeft->GetTransform()->GetPosition(), reversedMovement));
 	}
 
 	if (m_SceneContext.pInput->IsActionTriggered(InputActions::LaunchBall))
 	{
-		DirectX::XMFLOAT3 rad = { float(rand() % 20) - 10, 0.f, 0.f };
+		DirectX::XMFLOAT3 rad = { 10.f, 0.f, float(rand() % 20) - 10 };
 		m_pBall->GetComponent<RigidBodyComponent>()->AddForce({ rad }, physx::PxForceMode::eIMPULSE);
 	}
+
+	if (m_SceneContext.pInput->IsActionTriggered(InputActions::ResetButton))
+	{
+		Reset();
+	}
+}
+
+void PongScene::Reset()
+{
+	m_pBall->GetTransform()->Translate(0.f, 5.f, 0.f);
+	m_pCubeLeft->GetTransform()->Translate(-30.f, 5.f, 0.f);
+	m_pCubeRight->GetTransform()->Translate(30.f, 5.f, 0.f);
 }

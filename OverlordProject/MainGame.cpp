@@ -14,13 +14,13 @@
 
 #pragma region Lab/Milestone Includes
 #ifdef W3
-#include "Scenes/Week 3/MinionScene.h"
-#include "Scenes/Week 3/ComponentTestScene.h"
-#include "Scenes/Week 3/PongScene.h"
+#include "scenes/week 3/minionscene.h"
+#include "scenes/week 3/componenttestscene.h"
+#include "scenes/week 3/pongscene.h"
 #endif
 
 #ifdef W4
-//#include "Scenes/Week 4/ModelTestScene.h"
+#include "Scenes/Week 4/ModelTestScene.h"
 //#include "Scenes/Week 4/UberMaterialScene.h"
 //#include "Scenes/Week 4/SpikyScene.h"
 //#include "Scenes/Week 4/SpriteTestScene.h"

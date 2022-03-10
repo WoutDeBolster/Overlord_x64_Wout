@@ -1,7 +1,7 @@
 #include "stdafx.h"
 #include "ColorMaterial.h"
 
-ColorMaterial::ColorMaterial():
+ColorMaterial::ColorMaterial() :
 	Material<ColorMaterial>(L"Effects/PosNorm3D.fx")
 {}
 

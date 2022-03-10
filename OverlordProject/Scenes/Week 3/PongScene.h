@@ -25,10 +25,13 @@ private:
 	GameObject* m_TriggerWallLeft{};
 	GameObject* m_TriggerWallRight{};
 
-	GameObject* m_WallTop{};
-	GameObject* m_WallBottom{};
+	GameObject* m_pWallLeft{};
+	GameObject* m_pWallRight{};
 
 	float m_MovementSpeed{ 10.f };
+
+	float m_ZMax{ 10.f };
+	float m_Zmin{ -10.f };
 
 	enum InputActions
 	{

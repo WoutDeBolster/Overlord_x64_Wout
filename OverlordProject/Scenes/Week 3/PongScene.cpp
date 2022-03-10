@@ -11,6 +11,9 @@ PongScene::PongScene()
 
 void PongScene::Initialize()
 {
+	m_SceneContext.settings.clearColor = XMFLOAT4(0.f, 0.f, 0.f, 1.f);
+	m_SceneContext.settings.drawGrid = false;
+
 	// initializing random seed
 	srand(static_cast<unsigned int>(time(NULL)));
 
@@ -33,6 +36,7 @@ void PongScene::Initialize()
 	SetActiveCamera(cam);
 
 	// ball
+	std::cout << "Press space to launche" << std::endl;
 	m_pBall = AddChild(new SpherePrefab(1.f, 10, XMFLOAT4(Colors::Red)));
 	auto pSphereActor = m_pBall->AddComponent(new RigidBodyComponent(false));
 	pSphereActor->AddCollider(PxSphereGeometry{ 1.f }, *pBouncyMat);
@@ -42,11 +46,12 @@ void PongScene::Initialize()
 	m_pBall->GetTransform()->Translate(0.f, 5.f, 0.f);
 
 	// paddels
-	XMFLOAT3 paddleDim{ 1.f, 1.f, 10.f };
+	XMFLOAT3 paddleDim{ 10.f, 1.f, 1.f };
 	m_pCubeLeft = new GameObject();
 	m_pCubeLeft = AddChild(new CubePrefab(paddleDim, XMFLOAT4(Colors::Gray)));
 	auto pCubeActorLeft = m_pCubeLeft->AddComponent(new RigidBodyComponent(false));
-	pCubeActorLeft->AddCollider(PxBoxGeometry{ paddleDim.x / 2.f, paddleDim.y / 2.f, paddleDim.z / 2.f }, *pBouncyMat);
+	pCubeActorLeft->GetTransform()->Rotate(90.f, 90.f, 0.f);
+	pCubeActorLeft->AddCollider(PxCapsuleGeometry{ 1.f, 5.f }, *pBouncyMat);
 	pCubeActorLeft->SetConstraint(RigidBodyConstraint::TransX, true);
 	pCubeActorLeft->SetConstraint(RigidBodyConstraint::TransZ, true);
 	pCubeActorLeft->SetConstraint(RigidBodyConstraint::AllRot, true);
@@ -59,7 +64,8 @@ void PongScene::Initialize()
 	m_pCubeRight = new GameObject();
 	m_pCubeRight = AddChild(new CubePrefab(paddleDim, XMFLOAT4(Colors::Gray)));
 	auto pCubeActorRight = m_pCubeRight->AddComponent(new RigidBodyComponent(false));
-	pCubeActorRight->AddCollider(PxBoxGeometry{ paddleDim.x / 2.f, paddleDim.y / 2.f, paddleDim.z / 2.f }, *pBouncyMat);
+	pCubeActorRight->GetTransform()->Rotate(90.f, 90.f, 0.f);
+	pCubeActorRight->AddCollider(PxCapsuleGeometry{ 1.f, 5.f }, *pBouncyMat);
 	pCubeActorRight->SetConstraint(RigidBodyConstraint::TransX, true);
 	pCubeActorRight->SetConstraint(RigidBodyConstraint::TransZ, true);
 	pCubeActorRight->SetConstraint(RigidBodyConstraint::AllRot, true);
@@ -78,17 +84,33 @@ void PongScene::Initialize()
 	GetPhysxProxy()->AddActor(*pWallActor);
 
 	// triggers
-	pWallActor = physX.createRigidStatic(PxTransform(38.f, 0.f, 0.f));
-	pWallShape = PxRigidActorExt::createExclusiveShape(*pWallActor, PxBoxGeometry(1.f, 10.f, 20.f), *pBouncyMat);
-	pWallShape->setFlag(PxShapeFlag::eSIMULATION_SHAPE, false);
-	pWallShape->setFlag(PxShapeFlag::eTRIGGER_SHAPE, true);
-	GetPhysxProxy()->AddActor(*pWallActor);
+	m_pWallLeft = AddChild(new GameObject());
+	auto wallTriggerActor = m_pWallLeft->AddComponent(new RigidBodyComponent(true));
+	wallTriggerActor->AddCollider(PxBoxGeometry{ 1.f, 10.f, 20.f }, *pBouncyMat, true);
+	m_pWallLeft->GetTransform()->Translate(-38.f, 5.f, 0.f);
+	m_pWallLeft->SetOnTriggerCallBack([=](GameObject*, GameObject*, PxTriggerAction action)
+		{
+			if (action == PxTriggerAction::ENTER)
+			{
+				std::cout << "leftTriggerHit" << std::endl;
+				Reset();
+			}
+		}
+	);
 
-	pWallActor = physX.createRigidStatic(PxTransform(-38.f, 0.f, 0.f));
-	pWallShape = PxRigidActorExt::createExclusiveShape(*pWallActor, PxBoxGeometry(1.f, 10.f, 20.f), *pBouncyMat);
-	pWallShape->setFlag(PxShapeFlag::eSIMULATION_SHAPE, false);
-	pWallShape->setFlag(PxShapeFlag::eTRIGGER_SHAPE, true);
-	GetPhysxProxy()->AddActor(*pWallActor);
+	m_pWallRight = AddChild(new GameObject());
+	wallTriggerActor = m_pWallRight->AddComponent(new RigidBodyComponent(true));
+	wallTriggerActor->AddCollider(PxBoxGeometry{ 1.f, 10.f, 20.f }, *pBouncyMat, true);
+	m_pWallRight->GetTransform()->Translate(38.f, 5.f, 0.f);
+	m_pWallRight->SetOnTriggerCallBack([=](GameObject*, GameObject*, PxTriggerAction action)
+		{
+			if (action == PxTriggerAction::ENTER)
+			{
+				std::cout << "RightTriggerHit" << std::endl;
+				Reset();
+			}
+		}
+	);
 
 	// input
 	const auto inputAction1 = InputAction(InputActions::RightPeddle_Up, InputState::down, VK_UP);
@@ -121,27 +143,33 @@ void PongScene::Update()
 	XMFLOAT3 reversedMovement = movement;
 	reversedMovement.z = -reversedMovement.z;
 
-	if (m_SceneContext.pInput->IsActionTriggered(InputActions::RightPeddle_Up))
+	XMFLOAT3 leftPeddlePosUp = AddVector(m_pCubeLeft->GetTransform()->GetPosition(), movement);
+	XMFLOAT3 leftPeddlePosDown = AddVector(m_pCubeLeft->GetTransform()->GetPosition(), reversedMovement);
+
+	XMFLOAT3 rightPeddlePosUp = AddVector(m_pCubeRight->GetTransform()->GetPosition(), movement);
+	XMFLOAT3 rightPeddlePosDown = AddVector(m_pCubeRight->GetTransform()->GetPosition(), reversedMovement);
+
+	if (m_SceneContext.pInput->IsActionTriggered(InputActions::RightPeddle_Up) && rightPeddlePosUp.z < m_ZMax)
 	{
-		m_pCubeRight->GetTransform()->Translate(AddVector(m_pCubeRight->GetTransform()->GetPosition(), movement));
+		m_pCubeRight->GetTransform()->Translate(rightPeddlePosUp);
 	}
-	if (m_SceneContext.pInput->IsActionTriggered(InputActions::RightPeddle_Down))
+	if (m_SceneContext.pInput->IsActionTriggered(InputActions::RightPeddle_Down) && rightPeddlePosDown.z > m_Zmin)
 	{
-		m_pCubeRight->GetTransform()->Translate(AddVector(m_pCubeRight->GetTransform()->GetPosition(), reversedMovement));
+		m_pCubeRight->GetTransform()->Translate(rightPeddlePosDown);
 	}
 
-	if (m_SceneContext.pInput->IsActionTriggered(InputActions::LeftPeddle_Up))
+	if (m_SceneContext.pInput->IsActionTriggered(InputActions::LeftPeddle_Up) && leftPeddlePosUp.z < m_ZMax)
 	{
-		m_pCubeLeft->GetTransform()->Translate(AddVector(m_pCubeLeft->GetTransform()->GetPosition(), movement));
+		m_pCubeLeft->GetTransform()->Translate(leftPeddlePosUp);
 	}
-	if (m_SceneContext.pInput->IsActionTriggered(InputActions::LeftPeddle_Down))
+	if (m_SceneContext.pInput->IsActionTriggered(InputActions::LeftPeddle_Down) && leftPeddlePosDown.z > m_Zmin)
 	{
-		m_pCubeLeft->GetTransform()->Translate(AddVector(m_pCubeLeft->GetTransform()->GetPosition(), reversedMovement));
+		m_pCubeLeft->GetTransform()->Translate(leftPeddlePosDown);
 	}
 
 	if (m_SceneContext.pInput->IsActionTriggered(InputActions::LaunchBall))
 	{
-		DirectX::XMFLOAT3 rad = { 10.f, 0.f, float(rand() % 20) - 10 };
+		DirectX::XMFLOAT3 rad = { 20.f, 0.f, float(rand() % 20) - 10 };
 		m_pBall->GetComponent<RigidBodyComponent>()->AddForce({ rad }, physx::PxForceMode::eIMPULSE);
 	}
 

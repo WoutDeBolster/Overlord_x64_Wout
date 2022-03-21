@@ -1,5 +1,5 @@
 #pragma once
-class ColorMaterial final: public Material<ColorMaterial>
+class ColorMaterial final : public Material<ColorMaterial>
 {
 public:
 	ColorMaterial();

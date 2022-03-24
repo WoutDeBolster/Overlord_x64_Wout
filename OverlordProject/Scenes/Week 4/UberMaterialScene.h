@@ -15,8 +15,10 @@ public:
 protected:
 	void Initialize() override;
 	void Update() override;
+	void OnGUI() override;
 
 private:
+	GameObject* m_pSphere = nullptr;
 	UberMaterial* m_pUberMaterial = nullptr;
 };
 

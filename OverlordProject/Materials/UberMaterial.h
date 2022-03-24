@@ -25,7 +25,6 @@ public:
 	//**************
 	void SetNormalTexture(const std::wstring& assetFile);
 
-
 	//ENVIRONMENT MAPPING
 	//*******************
 	void SetEnvironmentCube(const std::wstring& assetFile);

@@ -1,4 +1,5 @@
 #pragma once
+#include "Materials/DiffuseMaterial.h"
 
 class ModelTestScene final : public GameScene
 {
@@ -14,5 +15,9 @@ public:
 protected:
 	void Initialize() override;
 	void Update() override;
+
+private:
+	GameObject* m_pChair = nullptr;
+	DiffuseMaterial* m_pDiffMat = nullptr;
 };
 

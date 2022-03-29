@@ -5,7 +5,7 @@
     <ClCompile Include="MainGame.cpp" />
     <ClCompile Include="stdafx.cpp" />
     <ClCompile Include="Scenes\Week 3\MinionScene.cpp" />
-    <ClCompile Include="Materials\ColorMaterial.cpp" />
+    <ClCompile Include="Scenes\Week 3\ColorMaterial.cpp" />
     <ClCompile Include="Prefabs\SpherePrefab.cpp" />
     <ClCompile Include="Prefabs\TorusPrefab.cpp" />
     <ClCompile Include="Prefabs\CubePrefab.cpp" />
@@ -16,12 +16,15 @@
     <ClCompile Include="Materials\UberMaterial.cpp" />
     <ClCompile Include="Materials\SpikyMaterial.cpp" />
     <ClCompile Include="Scenes\Week 4\SpikyScene.cpp" />
+    <ClCompile Include="Materials\DiffuseMaterial.cpp" />
+    <ClCompile Include="Materials\SpriteMaterial.cpp" />
+    <ClCompile Include="Scenes\Week 4\SpriteTestScene.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="MainGame.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="Scenes\Week 3\MinionScene.h" />
-    <ClInclude Include="Materials\ColorMaterial.h" />
+    <ClInclude Include="Scenes\Week 3\ColorMaterial.h" />
     <ClInclude Include="Prefabs\SpherePrefab.h" />
     <ClInclude Include="Prefabs\TorusPrefab.h" />
     <ClInclude Include="Prefabs\CubePrefab.h" />
@@ -32,5 +35,8 @@
     <ClInclude Include="Materials\UberMaterial.h" />
     <ClInclude Include="Materials\SpikyMaterial.h" />
     <ClInclude Include="Scenes\Week 4\SpikyScene.h" />
+    <ClInclude Include="Materials\DiffuseMaterial.h" />
+    <ClInclude Include="Materials\SpriteMaterial.h" />
+    <ClInclude Include="Scenes\Week 4\SpriteTestScene.h" />
   </ItemGroup>
 </Project>

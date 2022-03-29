@@ -1,6 +1,6 @@
 #pragma once
 
-class SpikyMaterial : public Material<SpikyMaterial>
+class SpikyMaterial final : public Material<SpikyMaterial>
 {
 public:
 	SpikyMaterial();

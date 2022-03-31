@@ -17,8 +17,8 @@
     <ClCompile Include="Materials\SpikyMaterial.cpp" />
     <ClCompile Include="Scenes\Week 4\SpikyScene.cpp" />
     <ClCompile Include="Materials\DiffuseMaterial.cpp" />
-    <ClCompile Include="Materials\SpriteMaterial.cpp" />
     <ClCompile Include="Scenes\Week 4\SpriteTestScene.cpp" />
+    <ClCompile Include="Scenes\Week 5\FontTestScene.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="MainGame.h" />
@@ -36,7 +36,7 @@
     <ClInclude Include="Materials\SpikyMaterial.h" />
     <ClInclude Include="Scenes\Week 4\SpikyScene.h" />
     <ClInclude Include="Materials\DiffuseMaterial.h" />
-    <ClInclude Include="Materials\SpriteMaterial.h" />
     <ClInclude Include="Scenes\Week 4\SpriteTestScene.h" />
+    <ClInclude Include="Scenes\Week 5\FontTestScene.h" />
   </ItemGroup>
 </Project>

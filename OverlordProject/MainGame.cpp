@@ -4,12 +4,12 @@
 /*LAB Content*/
 //#define W3
 //#define W4
-//#define W5
+#define W5
 //#define W6
 //#define W7
 
 /*MILESTONE Content*/
-#define MILESTONE_1
+//#define MILESTONE_1
 //#define MILESTONE_2
 
 #pragma region Lab/Milestone Includes
@@ -27,7 +27,7 @@
 #endif
 
 #ifdef W5
-//#include "Scenes/Week 5/FontTestScene.h"
+#include "Scenes/Week 5/FontTestScene.h"
 //#include "Scenes/Week 5/CharacterScene.h"
 //#include "Scenes/Week 5/PickingScene.h"
 #endif

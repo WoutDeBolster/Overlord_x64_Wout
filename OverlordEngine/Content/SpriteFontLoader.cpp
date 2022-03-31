@@ -12,20 +12,38 @@ SpriteFont* SpriteFontLoader::LoadContent(const ContentLoadInfo& loadInfo)
 		return nullptr;
 	}
 
-	TODO_W5(L"Implement SpriteFontLoader >> Parse .fnt file")
+	//TODO_W5(L"Implement SpriteFontLoader >> Parse .fnt file")
 	//See BMFont Documentation for Binary Layout
 
 	//Parse the Identification bytes (B,M,F)
 	//If Identification bytes doesn't match B|M|F,
 	//Log Error (SpriteFontLoader::LoadContent > Not a valid .fnt font) &
 	//return nullptr
-	//...
+	std::vector<char> identificationChars;
+	std::string identification;
+	identificationChars.push_back(pReader->Read<char>());
+	identificationChars.push_back(pReader->Read<char>());
+	identificationChars.push_back(pReader->Read<char>());
+	for (size_t i = 0; i < identificationChars.size(); i++)
+	{
+		identification += identificationChars[i];
+	}
+	if (identification != "BMF")
+	{
+		Logger::LogError(L"SpriteFontLoader::LoadContent > Not a valid .fnt font");
+		return nullptr;
+	}
 
 	//Parse the version (version 3 required)
 	//If version is < 3,
 	//Log Error (SpriteFontLoader::LoadContent > Only .fnt version 3 is supported)
 	//return nullptr
-	//...
+	auto version = pReader->Read<char>();
+	if (version != '3')
+	{
+		Logger::LogError(L"SpriteFontLoader::LoadContent > Only .fnt version 3 is supported");
+		return nullptr;
+	}
 
 	//Valid .fnt file >> Start Parsing!
 	//use this SpriteFontDesc to store all relevant information (used to initialize a SpriteFont object)

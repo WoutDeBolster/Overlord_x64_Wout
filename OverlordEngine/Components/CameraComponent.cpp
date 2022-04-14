@@ -60,11 +60,45 @@ void CameraComponent::SetActive(bool active)
 	ASSERT_IF(!pScene, L"Failed to set active camera. Parent game scene is null");
 
 	m_IsActive = active;
-	pScene->SetActiveCamera(active?this:nullptr); //Switch to default camera if active==false
+	pScene->SetActiveCamera(active ? this : nullptr); //Switch to default camera if active==false
 }
 
-GameObject* CameraComponent::Pick(CollisionGroup /*ignoreGroups*/) const
+GameObject* CameraComponent::Pick(CollisionGroup ignoreGroups) const
 {
-	TODO_W5(L"Implement Picking Logic")
+	//TODO_W5(L"Implement Picking Logic")
+	auto sceneContext{ m_pScene->GetSceneContext() };
+	auto mousePos{ sceneContext.pInput->GetMousePosition() };
+	const float viewWidth{ (m_Size > 0) ? m_Size * sceneContext.aspectRatio : sceneContext.windowWidth };
+	const float viewHeight = { (m_Size > 0) ? m_Size : sceneContext.windowHeight };
+	float halfViewWidth{ viewWidth / 2.f };
+	float halfViewHeight{ viewWidth / 2.f };
+
+	// step 1.
+	float Xndc{ (mousePos.x - halfViewWidth) / halfViewWidth };
+	float Yndc{ (halfViewHeight - mousePos.y) / halfViewHeight };
+
+	// step 2.
+	XMMATRIX ViewProjection{ XMLoadFloat4x4(&m_ViewProjection) };
+	XMMATRIX ViewProjectionInverted{ XMMatrixInverse(nullptr, ViewProjection) };
+
+	XMVECTOR nearPoint{ XMVector4Transform(XMVECTOR(Xndc, Yndc, 0, 0),ViewProjectionInverted) };
+	XMVECTOR farPoint{ XMVector4Transform(XMVECTOR(Xndc, Yndc, 1, 0),ViewProjectionInverted) };
+
+	XMFLOAT4 startFloat{};
+	XMFLOAT4 DirectionFloat{};
+	XMStoreFloat4(&startFloat, nearPoint);
+	XMStoreFloat4(&DirectionFloat, farPoint);
+	PxVec3 rayStart{ startFloat.x, startFloat.y, startFloat.z };
+	PxVec3 raydirection{ DirectionFloat.x, DirectionFloat.y, DirectionFloat.z };
+
+	// step  3.
+	PxQueryFilterData filterData{};
+	filterData.data.word0 = ~UINT(ignoreGroups);
+
+	PxRaycastBuffer hit{};
+	if (m_pScene->GetPhysxProxy()->Raycast(rayStart, raydirection, PX_MAX_F32, hit, PxHitFlag::eDEFAULT, filterData))
+	{
+		//return hit.getAnyHit(0);
+	}
 	return nullptr;
 }

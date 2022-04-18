@@ -69,9 +69,9 @@ GameObject* CameraComponent::Pick(CollisionGroup ignoreGroups) const
 	auto sceneContext{ m_pScene->GetSceneContext() };
 	auto mousePos{ sceneContext.pInput->GetMousePosition() };
 	const float viewWidth{ (m_Size > 0) ? m_Size * sceneContext.aspectRatio : sceneContext.windowWidth };
-	const float viewHeight = { (m_Size > 0) ? m_Size : sceneContext.windowHeight };
+	const float viewHeight{ (m_Size > 0) ? m_Size : sceneContext.windowHeight };
 	float halfViewWidth{ viewWidth / 2.f };
-	float halfViewHeight{ viewWidth / 2.f };
+	float halfViewHeight{ viewHeight / 2.f };
 
 	// step 1.
 	float Xndc{ (mousePos.x - halfViewWidth) / halfViewWidth };
@@ -81,8 +81,10 @@ GameObject* CameraComponent::Pick(CollisionGroup ignoreGroups) const
 	XMMATRIX ViewProjection{ XMLoadFloat4x4(&m_ViewProjection) };
 	XMMATRIX ViewProjectionInverted{ XMMatrixInverse(nullptr, ViewProjection) };
 
-	XMVECTOR nearPoint{ XMVector4Transform(XMVECTOR(Xndc, Yndc, 0, 0),ViewProjectionInverted) };
-	XMVECTOR farPoint{ XMVector4Transform(XMVECTOR(Xndc, Yndc, 1, 0),ViewProjectionInverted) };
+	XMFLOAT4 vectorNear{ Xndc, Yndc, 0, 0 };
+	XMFLOAT4 vectorFar{ Xndc, Yndc, 1, 0 };
+	XMVECTOR nearPoint{ XMVector4Transform(XMVECTOR(XMLoadFloat4(&vectorNear)),ViewProjectionInverted) };
+	XMVECTOR farPoint{ XMVector4Transform(XMVECTOR(XMLoadFloat4(&vectorFar)),ViewProjectionInverted) };
 
 	XMFLOAT4 startFloat{};
 	XMFLOAT4 DirectionFloat{};

@@ -28,8 +28,8 @@
 
 #ifdef W5
 #include "Scenes/Week 5/FontTestScene.h"
-//#include "Scenes/Week 5/CharacterScene.h"
-//#include "Scenes/Week 5/PickingScene.h"
+#include "Scenes/Week 5/CharacterScene.h"
+#include "Scenes/Week 5/PickingScene.h"
 #endif
 
 #ifdef W6
@@ -84,9 +84,9 @@ void MainGame::Initialize()
 #endif
 
 #ifdef W5
-	SceneManager::Get()->AddGameScene(new FontTestScene());
-	//SceneManager::Get()->AddGameScene(new CharacterScene());
-	//SceneManager::Get()->AddGameScene(new PickingScene());
+	//SceneManager::Get()->AddGameScene(new FontTestScene());
+	SceneManager::Get()->AddGameScene(new CharacterScene());
+	SceneManager::Get()->AddGameScene(new PickingScene());
 #endif
 
 #ifdef W6

@@ -93,7 +93,10 @@
     <PostBuildEvent />
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Prefabs\BoneObject.cpp" />
+    <ClCompile Include="Materials\ColorMaterial.cpp" />
     <ClCompile Include="Materials\DiffuseMaterial.cpp" />
+    <ClCompile Include="Prefabs\Character.cpp" />
     <ClCompile Include="Scenes\Week 4\ModelTestScene.cpp" />
     <ClCompile Include="Scenes\Week 3\PongScene.cpp" />
     <ClCompile Include="Scenes\Week 3\ComponentTestScene.cpp" />
@@ -105,6 +108,7 @@
     <ClCompile Include="Materials\SpikyMaterial.cpp" />
     <ClCompile Include="Scenes\Week 4\SpikyScene.cpp" />
     <ClCompile Include="Scenes\Week 4\SpriteTestScene.cpp" />
+    <ClCompile Include="Scenes\Week 5\CharacterScene.cpp" />
     <ClCompile Include="Scenes\Week 5\FontTestScene.cpp" />
     <ClCompile Include="Scenes\Week 5\PickingScene.cpp" />
     <ClCompile Include="stdafx.cpp">
@@ -131,7 +135,10 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Prefabs\BoneObject.h" />
+    <ClInclude Include="Materials\ColorMaterial.h" />
     <ClInclude Include="Materials\DiffuseMaterial.h" />
+    <ClInclude Include="Prefabs\Character.h" />
     <ClInclude Include="Scenes\Week 4\ModelTestScene.h" />
     <ClInclude Include="Scenes\Week 3\PongScene.h" />
     <ClInclude Include="Scenes\Week 3\ComponentTestScene.h" />
@@ -143,6 +150,7 @@
     <ClInclude Include="Materials\SpikyMaterial.h" />
     <ClInclude Include="Scenes\Week 4\SpikyScene.h" />
     <ClInclude Include="Scenes\Week 4\SpriteTestScene.h" />
+    <ClInclude Include="Scenes\Week 5\CharacterScene.h" />
     <ClInclude Include="Scenes\Week 5\FontTestScene.h" />
     <ClInclude Include="Scenes\Week 5\PickingScene.h" />
     <ClInclude Include="stdafx.h" />

@@ -19,6 +19,7 @@ void ControllerComponent::Initialize(const SceneContext& /*sceneContext*/)
 		m_pController = controllerManager->createController(m_ControllerDesc);
 		ASSERT_NULL_(m_pController);
 		m_pController->getActor()->userData = this;
+		m_ControllerDesc.userData = this;
 		SetCollisionGroup(CollisionGroup(m_CollisionGroups.word0));
 		SetCollisionIgnoreGroup(CollisionGroup(m_CollisionGroups.word1));
 	}

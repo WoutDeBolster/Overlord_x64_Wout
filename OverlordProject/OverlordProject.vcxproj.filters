@@ -20,6 +20,10 @@
     <ClCompile Include="Scenes\Week 4\SpriteTestScene.cpp" />
     <ClCompile Include="Scenes\Week 5\FontTestScene.cpp" />
     <ClCompile Include="Scenes\Week 5\PickingScene.cpp" />
+    <ClCompile Include="Prefabs\Character.cpp" />
+    <ClCompile Include="Scenes\Week 5\CharacterScene.cpp" />
+    <ClCompile Include="Materials\ColorMaterial.cpp" />
+    <ClCompile Include="Prefabs\BoneObject.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="MainGame.h" />
@@ -40,5 +44,9 @@
     <ClInclude Include="Scenes\Week 4\SpriteTestScene.h" />
     <ClInclude Include="Scenes\Week 5\FontTestScene.h" />
     <ClInclude Include="Scenes\Week 5\PickingScene.h" />
+    <ClInclude Include="Prefabs\Character.h" />
+    <ClInclude Include="Scenes\Week 5\CharacterScene.h" />
+    <ClInclude Include="Materials\ColorMaterial.h" />
+    <ClInclude Include="Prefabs\BoneObject.h" />
   </ItemGroup>
 </Project>

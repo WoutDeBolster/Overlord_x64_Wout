@@ -4,13 +4,13 @@
 /*LAB Content*/
 //#define W3
 //#define W4
-#define W5
+//#define W5
 //#define W6
 //#define W7
 
 /*MILESTONE Content*/
 //#define MILESTONE_1
-//#define MILESTONE_2
+#define MILESTONE_2
 
 #pragma region Lab/Milestone Includes
 #ifdef W3
@@ -33,13 +33,13 @@
 #endif
 
 #ifdef W6
-//#include "Scenes/Week 6/SoftwareSkinningScene_1.h"
-//#include "Scenes/Week 6/SoftwareSkinningScene_2.h"
-//#include "Scenes/Week 6/SoftwareSkinningScene_3.h"
+#include "Scenes/Week 6/SoftwareSkinningScene_1.h"
+#include "Scenes/Week 6/SoftwareSkinningScene_2.h"
+#include "Scenes/Week 6/SoftwareSkinningScene_3.h"
 #endif
 
 #ifdef W7
-//#include "Scenes/Week 7/HardwareSkinningScene.h"
+#include "Scenes/Week 7/HardwareSkinningScene.h"
 #endif
 
 #ifdef MILESTONE_1
@@ -60,12 +60,12 @@
 #pragma endregion
 
 //Game is preparing
-void MainGame::OnGamePreparing(const GameContext& /*gameContext*/)
+void MainGame::OnGamePreparing(const GameContext& gameContext)
 {
 	//Here you can change some game settings before engine initialize
 	//gameContext.windowWidth=... (default is 1280)
 	//gameContext.windowHeight=... (default is 720)
-	//gameContext.windowTitle = ...
+	const_cast<GameContext&>(gameContext).windowTitle = L"GP2 - Milestone 2 (2022) | (2DAE14) De Bolster Wout";
 }
 
 void MainGame::Initialize()
@@ -84,19 +84,19 @@ void MainGame::Initialize()
 #endif
 
 #ifdef W5
-	//SceneManager::Get()->AddGameScene(new FontTestScene());
+	SceneManager::Get()->AddGameScene(new FontTestScene());
 	SceneManager::Get()->AddGameScene(new CharacterScene());
 	SceneManager::Get()->AddGameScene(new PickingScene());
 #endif
 
 #ifdef W6
-	//SceneManager::Get()->AddGameScene(new SoftwareSkinningScene_1());
-	//SceneManager::Get()->AddGameScene(new SoftwareSkinningScene_2());
-	//SceneManager::Get()->AddGameScene(new SoftwareSkinningScene_3());
+	SceneManager::Get()->AddGameScene(new SoftwareSkinningScene_1());
+	SceneManager::Get()->AddGameScene(new SoftwareSkinningScene_2());
+	SceneManager::Get()->AddGameScene(new SoftwareSkinningScene_3());
 #endif
 
 #ifdef W7
-	//SceneManager::Get()->AddGameScene(new HardwareSkinningScene());
+	SceneManager::Get()->AddGameScene(new HardwareSkinningScene());
 #endif
 
 

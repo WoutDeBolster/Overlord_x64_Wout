@@ -1,7 +1,7 @@
 #include "stdafx.h"
 #include "ModelComponent.h"
 
-ModelComponent::ModelComponent(const std::wstring& assetFile):
+ModelComponent::ModelComponent(const std::wstring& assetFile) :
 	m_AssetFile(assetFile)
 {
 }
@@ -51,7 +51,7 @@ void ModelComponent::Draw(const SceneContext& sceneContext)
 	const UINT offset = 0;
 	const auto& vertexBufferData = m_pMeshFilter->GetVertexBufferData(sceneContext, m_pMaterial);
 	pDeviceContext->IASetVertexBuffers(0, 1, &vertexBufferData.pVertexBuffer, &vertexBufferData.VertexStride,
-	                                               &offset);
+		&offset);
 
 	//Set Index Buffer
 	pDeviceContext->IASetIndexBuffer(m_pMeshFilter->m_pIndexBuffer, DXGI_FORMAT_R32_UINT, 0);
@@ -73,22 +73,22 @@ void ModelComponent::Draw(const SceneContext& sceneContext)
 
 void ModelComponent::SetMaterial(BaseMaterial* pMaterial)
 {
-	if(pMaterial == nullptr)
+	if (pMaterial == nullptr)
 	{
 		m_pMaterial = nullptr;
 		return;
 	}
 
-	if(!pMaterial->HasValidMaterialId())
+	if (!pMaterial->HasValidMaterialId())
 	{
 		Logger::LogWarning(L"BaseMaterial does not have a valid BaseMaterial Id. Make sure to add the material to the material manager first.");
 		return;
 	}
-	
+
 	m_pMaterial = pMaterial;
 	m_MaterialChanged = true;
 
-	if(m_IsInitialized && GetScene())
+	if (m_IsInitialized && GetScene())
 	{
 
 		m_pMeshFilter->BuildVertexBuffer(GetScene()->GetSceneContext(), m_pMaterial);

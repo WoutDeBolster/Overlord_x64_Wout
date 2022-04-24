@@ -68,11 +68,6 @@ void CreateVertex(inout TriangleStream<GS_DATA> triStream, float3 pos, float4 co
 [maxvertexcount(4)]
 void MainGS(point VS_DATA vertex[1], inout TriangleStream<GS_DATA> triStream)
 {
-	//REMOVE THIS >
-	//GS_DATA dummyData = (GS_DATA)0; //Just some dummy data
-	//triStream.Append(dummyData); //The geometry shader needs to emit something, see what happens if it doesn't emit anything.
-	//< STOP REMOVING
-
 	//Create a Quad using the character information of the given vertex
 	//Note that the Vertex.CharSize is in screenspace, TextureCoordinates aren't ;) [Range 0 > 1]
 	int channel = vertex[0].Channel;

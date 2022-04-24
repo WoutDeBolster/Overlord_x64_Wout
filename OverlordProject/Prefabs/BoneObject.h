@@ -13,11 +13,18 @@ public:
 
 	void AddBone(BoneObject* pBone);
 
+	// part 2
+	const XMFLOAT4X4& GetBindPose() const { return m_BindPose; }
+	void CalculateBindPose();
+
 protected:
 	void Initialize(const SceneContext&) override;
 
 private:
 	float m_Lenght{};
 	BaseMaterial* m_pBaseMat{};
+
+	// part 2
+	XMFLOAT4X4 m_BindPose{};
 };
 

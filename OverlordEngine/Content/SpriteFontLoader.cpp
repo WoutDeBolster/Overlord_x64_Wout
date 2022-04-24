@@ -39,7 +39,7 @@ SpriteFont* SpriteFontLoader::LoadContent(const ContentLoadInfo& loadInfo)
 	//Log Error (SpriteFontLoader::LoadContent > Only .fnt version 3 is supported)
 	//return nullptr
 	char version = pReader->Read<char>();
-	if (version != '3')
+	if (version != 3)
 	{
 		Logger::LogError(L"SpriteFontLoader::LoadContent > Only .fnt version 3 is supported");
 		return nullptr;
@@ -59,12 +59,12 @@ SpriteFont* SpriteFontLoader::LoadContent(const ContentLoadInfo& loadInfo)
 	//Retrieve the FontName [fontDesc.fontName]
 	//...
 	char blockId{ pReader->Read<char>() };
-	int blockSize{ pReader->Read<int>() };
-	int fontSize{ pReader->Read<int>() };
+	int infoBlockSize{ pReader->Read<int>() };
+	short int fontSize{ pReader->Read<short int>() };
 	pReader->MoveBufferPosition(12);
 	std::wstring fontName{ pReader->ReadNullString() };
 
-	fontDesc.fontSize = short(fontSize);
+	fontDesc.fontSize = fontSize;
 	fontDesc.fontName = fontName;
 
 
@@ -79,19 +79,20 @@ SpriteFont* SpriteFontLoader::LoadContent(const ContentLoadInfo& loadInfo)
 	//Advance to Block2 (Move Reader)
 	//...
 	blockId = pReader->Read<char>();
-	blockSize = pReader->Read<int>();
-	pReader->MoveBufferPosition(2);
-	unsigned int lingeHeight{ pReader->Read<unsigned int>() };
-	unsigned int lingeWithe{ pReader->Read<unsigned int>() };
-	unsigned int pageCount{ pReader->Read<unsigned int>() };
+	int blockSize = pReader->Read<int>();
+	pReader->MoveBufferPosition(4);
+	short int lingeHeight{ pReader->Read<short int>() };
+	short int lingeWithe{ pReader->Read<short int>() };
+	char pageCount{ pReader->Read<char>() };
 	if (pageCount > 1)
 	{
 		Logger::LogError(L"Only one texture per font is allowed!");
+		return nullptr;
 	}
-	pReader->MoveBufferPosition(5);
+	pReader->MoveBufferPosition(6);
 
-	fontDesc.textureHeight = short(lingeHeight);
-	fontDesc.textureWidth = short(lingeWithe);
+	fontDesc.textureHeight = lingeHeight;
+	fontDesc.textureWidth = lingeWithe;
 
 	//**********
 	// BLOCK 2 *
@@ -136,26 +137,40 @@ SpriteFont* SpriteFontLoader::LoadContent(const ContentLoadInfo& loadInfo)
 	//(loop restarts till all metrics are parsed)
 	blockId = pReader->Read<char>();
 	blockSize = pReader->Read<int>();
-	unsigned int numChars = { static_cast<unsigned int>(blockSize / 20) };
+	int numChars = { blockSize / infoBlockSize };
 
-	for (unsigned int i = 0; i < numChars; i++)
+	for (size_t i = 0; i < numChars; ++i)
 	{
-		unsigned int id{ pReader->Read<unsigned int>() };
+		wchar_t id{ wchar_t(pReader->Read<int>()) };
 		FontMetric metric;
 		metric.character = wchar_t(id);
-		unsigned int posX{ pReader->Read<unsigned short>() };
-		unsigned int posY{ pReader->Read<unsigned short>() };
-		metric.width = pReader->Read<unsigned short>();
-		metric.height = pReader->Read<unsigned short>();
+		short posX{ pReader->Read<short>() };
+		short posY{ pReader->Read<short>() };
+		metric.width = pReader->Read<short>();
+		metric.height = pReader->Read<short>();
 		metric.offsetX = pReader->Read<short>();
 		metric.offsetY = pReader->Read<short>();
 		metric.advanceX = pReader->Read<short>();
-		metric.page = pReader->Read<unsigned char>();
-		metric.channel = pReader->Read<unsigned char>();
-		metric.texCoord = { posX / (float)metric.width, posY / (float)metric.height };
+		metric.page = pReader->Read<char>();
+		char channel = pReader->Read<char>();
+		switch (channel)
+		{
+		case 1:
+			metric.channel = 2;
+			break;
+		case 2:
+			metric.channel = 1;
+			break;
+		case 4:
+			metric.channel = 0;
+			break;
+		case 8:
+			metric.channel = 3;
+			break;
+		}
+		metric.texCoord = { static_cast<float>(posX) / static_cast<float>(fontDesc.textureWidth), static_cast<float>(posY) / static_cast<float>(fontDesc.textureHeight) };
 
-		wchar_t charId{ wchar_t(id) };
-		fontDesc.metrics.insert(std::make_pair(charId, metric));
+		fontDesc.metrics.insert(std::make_pair(id, metric));
 	}
 
 	//Done!

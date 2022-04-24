@@ -22,8 +22,9 @@ public:
 	bool IsPlaying() const { return m_IsPlaying; }
 	bool IsReversed() const { return m_Reversed; }
 	float GetAnimationSpeed() const { return m_AnimationSpeed; }
+	const AnimationClip& GetClip(int clipId) { ASSERT_IF_(clipId >= m_pMeshFilter->m_AnimationClips.size())return m_pMeshFilter->m_AnimationClips[clipId]; }
 	UINT GetClipCount() const { return UINT(m_pMeshFilter->m_AnimationClips.size()); }
-	const std::wstring& GetClipName() const { return m_ClipSet ? m_CurrentClip.name : L""; }
+	const std::wstring& GetClipName() const { ASSERT_IF_(!m_ClipSet) return m_CurrentClip.name; }
 	const std::vector<XMFLOAT4X4>& GetBoneTransforms() const { return m_Transforms; }
 
 private:

@@ -20,6 +20,6 @@ private:
 	float m_AnimationSpeed{ 1.f };
 
 	char** m_ClipNames{};
-	int m_ClipCount{};
+	UINT m_ClipCount{};
 };
 

@@ -1,6 +1,7 @@
 #pragma once
 class CameraComponent;
 class InputManager;
+class LightManager;
 class GameTime;
 class OverlordGame;
 class MaterialManager;
@@ -33,6 +34,7 @@ struct SceneSettings
 struct SceneContext
 {
 	InputManager* pInput{};
+	LightManager* pLights{};
 	CameraComponent* pCamera{};
 	GameTime* pGameTime{};
 	D3D11Context d3dContext{};
@@ -40,6 +42,7 @@ struct SceneContext
 	float windowWidth{};
 	float windowHeight{};
 	float aspectRatio{};
+	UINT frameNumber{};
 
 	SceneSettings settings{};
 };

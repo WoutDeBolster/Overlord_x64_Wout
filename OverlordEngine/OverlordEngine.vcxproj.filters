@@ -48,6 +48,12 @@
     <ClCompile Include="Utils\PhysxHelper.cpp" />
     <ClCompile Include="Utils\Utils.cpp" />
     <ClCompile Include="Utils\VertexHelper.cpp" />
+    <ClCompile Include="Misc\ShadowMapMaterial.cpp" />
+    <ClCompile Include="Misc\PostProcessingMaterial.cpp" />
+    <ClCompile Include="Misc\ParticleMaterial.cpp" />
+    <ClCompile Include="Managers\LightManager.cpp" />
+    <ClCompile Include="Graphics\ShadowMapRenderer.cpp" />
+    <ClCompile Include="Components\ParticleEmitterComponent.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="stdafx.h" />
@@ -107,5 +113,11 @@
     <ClInclude Include="Utils\Utils.h" />
     <ClInclude Include="Utils\VertexHelper.h" />
     <ClInclude Include="Lab_Todos.h" />
+    <ClInclude Include="Misc\ShadowMapMaterial.h" />
+    <ClInclude Include="Misc\PostProcessingMaterial.h" />
+    <ClInclude Include="Misc\ParticleMaterial.h" />
+    <ClInclude Include="Managers\LightManager.h" />
+    <ClInclude Include="Graphics\ShadowMapRenderer.h" />
+    <ClInclude Include="Components\ParticleEmitterComponent.h" />
   </ItemGroup>
 </Project>

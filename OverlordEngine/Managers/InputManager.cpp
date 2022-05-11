@@ -82,7 +82,7 @@ void InputManager::ForceMouseToCenter(bool force)
 
 	if (force)
 	{
-		POINT mouseCenter;
+		POINT mouseCenter{};
 		m_CurrMousePosition.x = static_cast<LONG>(m_GameContext.windowWidth) / 2;
 		m_CurrMousePosition.y = static_cast<LONG>(m_GameContext.windowHeight) / 2;
 		mouseCenter.x = m_CurrMousePosition.x;
@@ -316,7 +316,7 @@ XMFLOAT2 InputManager::GetThumbstickPosition(bool leftThumbstick, GamepadIndex p
 	}
 	else
 	{
-		pos = XMFLOAT2(m_CurrGamepadState[int(playerIndex)].Gamepad.sThumbLX, m_CurrGamepadState[int(playerIndex)].Gamepad.sThumbLY);
+		pos = XMFLOAT2(m_CurrGamepadState[int(playerIndex)].Gamepad.sThumbRX, m_CurrGamepadState[int(playerIndex)].Gamepad.sThumbRY);
 
 		if (pos.x > -XINPUT_GAMEPAD_RIGHT_THUMB_DEADZONE && pos.x < XINPUT_GAMEPAD_RIGHT_THUMB_DEADZONE)pos.x = 0;
 		if (pos.y > -XINPUT_GAMEPAD_RIGHT_THUMB_DEADZONE && pos.y < XINPUT_GAMEPAD_RIGHT_THUMB_DEADZONE)pos.y = 0;

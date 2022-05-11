@@ -1,4 +1,5 @@
 #pragma once
+//Resharper Disable All
 
 struct VertexPosCol
 {
@@ -111,6 +112,7 @@ struct VertexSprite
 	}
 };
 
+//Text Rendering
 struct VertexText
 {
 	UINT channelId{};
@@ -118,4 +120,13 @@ struct VertexText
 	XMFLOAT4 color{};
 	XMFLOAT2 texCoord{};
 	XMFLOAT2 characterDimension{};
+};
+
+//Particle Rendering
+struct VertexParticle
+{
+	XMFLOAT3 Position{};
+	XMFLOAT4 Color{XMFLOAT4{Colors::White}};
+	float Size{5.f};
+	float Rotation{0.f};
 };

@@ -103,10 +103,16 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="Components\ControllerComponent.h" />
+    <ClInclude Include="Components\ParticleEmitterComponent.h" />
+    <ClInclude Include="Graphics\ShadowMapRenderer.h" />
     <ClInclude Include="Lab_Todos.h" />
+    <ClInclude Include="Managers\LightManager.h" />
     <ClInclude Include="Misc\ModelAnimator.h" />
     <ClInclude Include="Content\SpriteFontLoader.h" />
     <ClInclude Include="Graphics\TextRenderer.h" />
+    <ClInclude Include="Misc\ParticleMaterial.h" />
+    <ClInclude Include="Misc\PostProcessingMaterial.h" />
+    <ClInclude Include="Misc\ShadowMapMaterial.h" />
     <ClInclude Include="Prefabs\FixedCamera.h" />
     <ClInclude Include="Prefabs\FreeCamera.h" />
     <ClInclude Include="Utils\ImguiHelper.h">
@@ -167,9 +173,15 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Components\ControllerComponent.cpp" />
+    <ClCompile Include="Components\ParticleEmitterComponent.cpp" />
+    <ClCompile Include="Graphics\ShadowMapRenderer.cpp" />
+    <ClCompile Include="Managers\LightManager.cpp" />
     <ClCompile Include="Misc\ModelAnimator.cpp" />
     <ClCompile Include="Content\SpriteFontLoader.cpp" />
     <ClCompile Include="Graphics\TextRenderer.cpp" />
+    <ClCompile Include="Misc\ParticleMaterial.cpp" />
+    <ClCompile Include="Misc\PostProcessingMaterial.cpp" />
+    <ClCompile Include="Misc\ShadowMapMaterial.cpp" />
     <ClCompile Include="Prefabs\FixedCamera.cpp" />
     <ClCompile Include="Prefabs\FreeCamera.cpp" />
     <ClCompile Include="Utils\ImguiHelper.cpp" />

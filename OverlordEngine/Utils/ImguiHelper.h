@@ -1408,3 +1408,33 @@ namespace ImguiHelper
         }
     }
 }
+
+namespace ImGui
+{
+	inline bool InputFloatRange(const char* label, float* min, float* max, const char* format = "%.3f", ImGuiInputTextFlags flags = 0)
+	{
+        float bounds[2] = { *min, *max };
+        if (InputFloat2(label, bounds, format, flags))
+        {
+            *min = bounds[0];
+            *max = bounds[1];
+            return true;
+        }
+
+        return false;
+	}
+
+    inline bool SliderUInt(const char* label, UINT* value, UINT min, UINT max, const char* format = "%d", ImGuiSliderFlags flags = 0)
+    {
+        int iValue = static_cast<int>(*value);
+        const int iMin = static_cast<int>(min);
+        const int iMax = static_cast<int>(max);
+        if (SliderInt(label, &iValue, iMin, iMax, format, flags))
+        {
+            *value = static_cast<UINT>(iValue);
+            return true;
+        }
+        
+        return false;
+    }
+}

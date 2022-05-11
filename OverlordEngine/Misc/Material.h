@@ -1,6 +1,8 @@
 #pragma once
-template<class T>
-class Material: public BaseMaterial
+
+	template<class T>
+	class Material: public BaseMaterial
+
 {
 public:
 	Material(const std::wstring& effectFile)
@@ -17,11 +19,6 @@ public:
 		if(m_References <= 0)
 		{
 			m_VariableIndexLUT.clear();
-
-			m_pEVar_WORLD = nullptr;
-			m_pEVar_VIEW = nullptr;
-			m_pEVar_VIEWINVERSE = nullptr;
-			m_pEVar_WORLDVIEWPROJECTION = nullptr;
 
 			for(auto& pair:m_Techniques)
 			{
@@ -55,10 +52,10 @@ public:
 			D3DX11_EFFECT_DESC effectDesc{};
 			m_pRootEffect->GetDesc(&effectDesc);
 
-			auto numGlobalVariables = UINT(effectDesc.GlobalVariables);
 			m_VariableIndexLUT.clear();
+			std::fill_n(m_RootVariableIndexLUT, static_cast<UINT>(eRootVariable::COUNT), -1);
 
-			for (UINT i{ 0 }; i < numGlobalVariables; ++i)
+			for (UINT i{ 0 }; i < effectDesc.GlobalVariables; ++i)
 			{
 				const auto pVariable = m_pRootEffect->GetVariableByIndex(i);
 				D3DX11_EFFECT_VARIABLE_DESC variableDesc{};
@@ -66,14 +63,25 @@ public:
 
 				auto variableHash = std::hash < std::wstring >{}(StringUtil::utf8_decode(variableDesc.Name));
 				m_VariableIndexLUT.insert(std::make_pair(variableHash, i));
+
+				//Search Root Variable
+				//Check for Semantic >> Possible Root Variable
+				if (variableDesc.Semantic == nullptr) continue;
+
+				auto semanticStr = std::string(variableDesc.Semantic);
+				std::ranges::transform(semanticStr, semanticStr.begin(), ::tolower);
+				if(m_RootVariableSemanticLUT.contains(semanticStr))
+				{
+					m_RootVariableIndexLUT[static_cast<UINT>(m_RootVariableSemanticLUT[semanticStr])] = i;
+				}
 			}
 
 			//TECHNIQUES
 			//(Load)
-			const auto numTechniques = UINT(effectDesc.Techniques);
+			m_numTechniques = effectDesc.Techniques;
 			m_Techniques.clear();
 
-			for (UINT i{ 0 }; i < numTechniques; ++i)
+			for (UINT i{ 0 }; i < m_numTechniques; ++i)
 			{
 				const auto pTechnique = m_pRootEffect->GetTechniqueByIndex(i);
 				D3DX11_TECHNIQUE_DESC techDesc{};
@@ -101,6 +109,7 @@ public:
 
 protected:
 	const std::map<size_t, UINT>& GetVariableIndexLUT() const override { return m_VariableIndexLUT; }
+	int GetRootVariableIndex(eRootVariable rootVariable) const override { return m_RootVariableIndexLUT[static_cast<size_t>(rootVariable)]; }
 	const std::map<size_t, MaterialTechniqueContext>& GetTechniques() const override { return m_Techniques; }
 	const std::wstring& GetEffectName() const override { return m_EffectFile; }
 
@@ -109,6 +118,7 @@ private:
 	static bool m_EffectInstanceLoaded;
 	static std::map<size_t, UINT> m_VariableIndexLUT;
 	static std::map<size_t, MaterialTechniqueContext> m_Techniques;
+	static int m_RootVariableIndexLUT[];
 
 	static ID3DX11Effect* m_pRootEffect;
 	static std::wstring m_EffectFile;
@@ -119,4 +129,5 @@ template<class T> int Material<T>::m_References{0};
 template<class T> std::wstring Material<T>::m_EffectFile{};
 template<class T> ID3DX11Effect* Material<T>::m_pRootEffect{};
 template<class T> std::map<size_t, UINT> Material<T>::m_VariableIndexLUT{};
+template<class T> int Material<T>::m_RootVariableIndexLUT[static_cast<UINT>(eRootVariable::COUNT)]{};
 template<class T> std::map<size_t, MaterialTechniqueContext> Material<T>::m_Techniques{};

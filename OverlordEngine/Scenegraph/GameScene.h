@@ -1,5 +1,7 @@
 #pragma once
 #include "Base/Structs.h"
+class PostProcessingMaterial;
+class BaseMaterial;
 class PhysxProxy;
 class CameraComponent;
 class GameObject;
@@ -28,6 +30,11 @@ public:
 	SceneSettings& GetSceneSettings() { return m_SceneContext.settings; }
 	CameraComponent* GetActiveCamera() const { return m_pActiveCamera; }
 
+	void AddPostProcessingEffect(PostProcessingMaterial* pMaterial);
+	void AddPostProcessingEffect(UINT materialId);
+	void RemovePostProcessingEffect(PostProcessingMaterial* pMaterial);
+	void RemovePostProcessingEffect(UINT materialId);
+
 	PhysxProxy* GetPhysxProxy() const { return m_pPhysxProxy; }
 	void SetActiveCamera(CameraComponent* pCameraComponent);
 
@@ -36,6 +43,8 @@ protected:
 	virtual void PostInitialize() {};
 	virtual void Update() {};
 	virtual void Draw() {};
+	virtual void PostDraw() {};
+	virtual void ShadowDraw() {};
 
 	virtual void OnGUI(){}
 	virtual void OnSceneActivated() {}
@@ -59,4 +68,7 @@ private:
 	std::wstring m_SceneName{};
 	CameraComponent* m_pDefaultCamera{}, * m_pActiveCamera{};
 	PhysxProxy* m_pPhysxProxy{};
+
+	std::vector<PostProcessingMaterial*> m_PostProcessingMaterials{};
+	OverlordGame* m_pGame{};
 };

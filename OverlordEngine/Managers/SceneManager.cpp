@@ -133,7 +133,10 @@ void SceneManager::Update()
 	{
 		DebugRenderer::BeginFrame(m_ActiveScene->m_SceneContext.settings);
 		m_ActiveScene->RootUpdate();
+		return;
 	}
+
+	ASSERT_IF(m_ActiveScene == nullptr, L"No Active Scene Set!")
 }
 
 void SceneManager::Draw() const

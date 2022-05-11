@@ -1,5 +1,14 @@
 #include "stdafx.h"
 #include "BaseMaterial.h"
+#include <ranges>
+
+std::map<std::string, BaseMaterial::eRootVariable> BaseMaterial::m_RootVariableSemanticLUT = {
+		{"world", eRootVariable::WORLD},
+		{"view", eRootVariable::VIEW},
+		{"viewinverse", eRootVariable::VIEW_INVERSE},
+		{"worldviewprojection", eRootVariable::WORLD_VIEW_PROJECTION}
+};
+
 BaseMaterial::~BaseMaterial()
 {
 	SafeRelease(m_pEffect);
@@ -12,61 +21,69 @@ void BaseMaterial::_baseInitialize(ID3DX11Effect* pRootEffect, UINT materialId)
 	m_MaterialId = materialId;
 	pRootEffect->CloneEffect(0, &m_pEffect);
 
-	//Retrieve Root variables
-	m_pEVar_WORLD = m_pEffect->GetVariableBySemantic("world")->AsMatrix();
-	if (!m_pEVar_WORLD->IsValid()) m_pEVar_WORLD = nullptr;
+	//Update Technique Pointers
+	const auto& techniqueCtxs = GetTechniques();
+	for(UINT techIndex{0}; techIndex < m_numTechniques; ++techIndex)
+	{
+		auto it = techniqueCtxs.begin();
+		std::advance(it, techIndex);
+		auto& ctx = const_cast<MaterialTechniqueContext&>(it->second);
+		ctx.pTechnique = m_pEffect->GetTechniqueByIndex(techIndex);
+	}
 
-	m_pEVar_VIEW = m_pEffect->GetVariableBySemantic("view")->AsMatrix();
-	if (!m_pEVar_VIEW->IsValid()) m_pEVar_VIEW = nullptr;
-
-	m_pEVar_VIEWINVERSE = m_pEffect->GetVariableBySemantic("viewinverse")->AsMatrix();
-	if (!m_pEVar_VIEWINVERSE->IsValid()) m_pEVar_VIEWINVERSE = nullptr;
-
-	m_pEVar_WORLDVIEWPROJECTION = m_pEffect->GetVariableBySemantic("worldviewprojection")->AsMatrix();
-	if (!m_pEVar_WORLDVIEWPROJECTION->IsValid()) m_pEVar_WORLDVIEWPROJECTION = nullptr;
-
-	//Or to prevent warning but slower...
-	//if (variableDesc.Semantic == nullptr) continue;
-
-	//auto semanticStr = std::string(variableDesc.Semantic);
-	//std::ranges::transform(semanticStr, semanticStr.begin(), ::tolower);
-
-	//if (semanticStr == "world") m_pEVar_WORLD = pVariable->AsMatrix();
-	//else if (semanticStr == "view") m_pEVar_VIEW = pVariable->AsMatrix();
-	//else if (semanticStr == "viewinverse") m_pEVar_VIEWINVERSE = pVariable->AsMatrix();
-	//else if (semanticStr == "worldviewprojection") m_pEVar_WORLDVIEWPROJECTION = pVariable->AsMatrix();
+	//Retrieve Root Variables
+	for(UINT i{0}; i < static_cast<UINT>(eRootVariable::COUNT); ++i)
+	{
+		auto rootVariableIndex = GetRootVariableIndex(static_cast<eRootVariable>(i));
+		if(rootVariableIndex >= 0)
+		{
+			m_RootVariableLUT[i] = m_pEffect->GetVariableByIndex(static_cast<UINT>(rootVariableIndex));
+		}
+	}
 
 	m_IsInitialized = true;
 }
 
-void BaseMaterial::UpdateEffectVariables(const SceneContext& sceneContext, const ModelComponent* pModelComponent) const
+void BaseMaterial::UpdateEffectVariables(const SceneContext& sceneContext, const ModelComponent* pModelComponent)
 {
+	if (!NeedsUpdate(sceneContext.frameNumber, pModelComponent->GetComponentId())) return;
+
 	if (m_IsInitialized)
 	{
+		m_LastUpdateFrame = sceneContext.frameNumber;
+		m_LastUpdateID = pModelComponent->GetComponentId();
+
+		//Update Root Variables
 		auto world = XMLoadFloat4x4(&pModelComponent->GetTransform()->GetWorld());
 		auto view = XMLoadFloat4x4(&sceneContext.pCamera->GetView());
 
-		if (m_pEVar_WORLD)
-			m_pEVar_WORLD->SetMatrix(reinterpret_cast<float*>(&world));
+		if (m_RootVariableLUT[static_cast<UINT>(eRootVariable::WORLD)])
+			m_RootVariableLUT[static_cast<UINT>(eRootVariable::WORLD)]->AsMatrix()->SetMatrix(reinterpret_cast<float*>(&world));
 
-		if (m_pEVar_VIEW)
-			m_pEVar_VIEW->SetMatrix(reinterpret_cast<float*>(&view));
+		if (m_RootVariableLUT[static_cast<UINT>(eRootVariable::VIEW)])
+			m_RootVariableLUT[static_cast<UINT>(eRootVariable::VIEW)]->AsMatrix()->SetMatrix(reinterpret_cast<float*>(&view));
 
-		if (m_pEVar_WORLDVIEWPROJECTION)
+		if (m_RootVariableLUT[static_cast<UINT>(eRootVariable::WORLD_VIEW_PROJECTION)])
 		{
 			const auto projection = XMLoadFloat4x4(&sceneContext.pCamera->GetProjection());
 			auto wvp = world * view * projection;
-			m_pEVar_WORLDVIEWPROJECTION->SetMatrix(reinterpret_cast<float*>(&wvp));
+			m_RootVariableLUT[static_cast<UINT>(eRootVariable::WORLD_VIEW_PROJECTION)]->AsMatrix()->SetMatrix(reinterpret_cast<float*>(&wvp));
 		}
 
-		if (m_pEVar_VIEWINVERSE)
+		if (m_RootVariableLUT[static_cast<UINT>(eRootVariable::VIEW_INVERSE)])
 		{
 			auto& viewInv = sceneContext.pCamera->GetViewInverse();
-			m_pEVar_VIEWINVERSE->SetMatrix(&viewInv._11);
+			m_RootVariableLUT[static_cast<UINT>(eRootVariable::VIEW_INVERSE)]->AsMatrix()->SetMatrix(&viewInv._11);
 		}
 
 		OnUpdateModelVariables(sceneContext, pModelComponent);
 	}
+}
+
+bool BaseMaterial::NeedsUpdate(UINT frame, UINT id) const
+{
+	if (m_LastUpdateFrame == 0 && m_LastUpdateID == 0) return true;
+	return m_LastUpdateFrame != frame || m_LastUpdateID != id;
 }
 
 ID3DX11EffectVariable* BaseMaterial::GetVariable(const std::wstring& varName) const
@@ -169,15 +186,20 @@ void BaseMaterial::SetVariable_VectorArray(const std::wstring& varName, const fl
 	Logger::LogWarning(L"Shader variable \'{}\' not found for \'{}\'", varName, GetEffectName());
 }
 
-void BaseMaterial::SetVariable_Texture(const std::wstring& varName, TextureData* pTexture) const
+void BaseMaterial::SetVariable_Texture(const std::wstring& varName, ID3D11ShaderResourceView* pSRV) const
 {
 	if (const auto pShaderVariable = GetVariable(varName))
 	{
-		HANDLE_ERROR(pShaderVariable->AsShaderResource()->SetResource(pTexture->GetShaderResourceView()));
+		HANDLE_ERROR(pShaderVariable->AsShaderResource()->SetResource(pSRV));
 		return;
 	}
 
 	Logger::LogWarning(L"Shader variable \'{}\' not found for \'{}\'", varName, GetEffectName());
+}
+
+void BaseMaterial::SetVariable_Texture(const std::wstring& varName, const TextureData* pTexture) const
+{
+	SetVariable_Texture(varName, pTexture->GetShaderResourceView());
 }
 
 void BaseMaterial::SetTechnique(const std::wstring& techName)
@@ -208,6 +230,17 @@ void BaseMaterial::SetTechnique(int index)
 	}
 
 	Logger::LogWarning(L"Shader technique with index \'{}\' not found for \'{}\'", index, GetEffectName());
+}
+
+const MaterialTechniqueContext& BaseMaterial::GetTechniqueContext(int index) const
+{
+	auto& techniques = GetTechniques();
+	ASSERT_IF_(techniques.size() <= index);
+
+	auto it = techniques.begin();
+	std::advance(it, index);
+
+	return it->second;
 }
 
 void BaseMaterial::DrawImGui()
@@ -251,7 +284,7 @@ void BaseMaterial::DrawImGui()
 			{
 				int value{};
 				pVariable->AsScalar()->GetInt(&value);
-				if (ImGui::InputInt(variableDesc.Name, &value))
+				if (ImGui::DragInt(variableDesc.Name, &value, 0.1f))
 				{
 					pVariable->AsScalar()->SetInt(value);
 				}
@@ -263,7 +296,7 @@ void BaseMaterial::DrawImGui()
 				{
 					float value{};
 					pVariable->AsScalar()->GetFloat(&value);
-					if (ImGui::InputFloat(variableDesc.Name, &value))
+					if (ImGui::DragFloat(variableDesc.Name, &value, 0.1f))
 						pVariable->AsScalar()->SetFloat(value);
 				}
 				else if (effectTypeDesc.Class == D3D_SVC_VECTOR)
@@ -273,9 +306,9 @@ void BaseMaterial::DrawImGui()
 					pVariable->AsVector()->GetFloatVector(&value[0]);
 					switch (effectTypeDesc.Columns)
 					{
-					case 2: changed = ImGui::InputFloat2(variableDesc.Name, &value[0]); break;
-					case 3: changed = isColor ? ImGui::ColorEdit3(variableDesc.Name, &value[0], ImGuiColorEditFlags_NoInputs) : ImGui::InputFloat3(variableDesc.Name, &value[0]); break;
-					case 4: changed = isColor ? ImGui::ColorEdit4(variableDesc.Name, &value[0], ImGuiColorEditFlags_NoInputs) : ImGui::InputFloat4(variableDesc.Name, &value[0]); break;
+					case 2: changed = ImGui::DragFloat2(variableDesc.Name, &value[0], 0.1f); break;
+					case 3: changed = isColor ? ImGui::ColorEdit3(variableDesc.Name, &value[0], ImGuiColorEditFlags_NoInputs) : ImGui::DragFloat3(variableDesc.Name, &value[0], 0.1f); break;
+					case 4: changed = isColor ? ImGui::ColorEdit4(variableDesc.Name, &value[0], ImGuiColorEditFlags_NoInputs) : ImGui::DragFloat3(variableDesc.Name, &value[0], 0.1f); break;
 					}
 
 					if (changed) pVariable->AsVector()->SetFloatVector(&value[0]);

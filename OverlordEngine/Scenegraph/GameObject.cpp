@@ -107,13 +107,30 @@ void GameObject::RootPostDraw(const SceneContext& sceneContext)
 	//Component Post-Draw
 	for (BaseComponent* pComp : m_pComponents)
 	{
-		pComp->PostDraw(sceneContext);
+		if(pComp->m_enablePostDraw)
+			pComp->PostDraw(sceneContext);
 	}
 
 	//Root-Object Post-Draw
 	for (GameObject* pChild : m_pChildren)
 	{
 		pChild->RootPostDraw(sceneContext);
+	}
+}
+
+void GameObject::RootShadowMapDraw(const SceneContext& sceneContext) const
+{
+	//Component Shadow-Draw
+	for (BaseComponent* pComp : m_pComponents)
+	{
+		if(pComp->m_enableShadowMapDraw)
+			pComp->ShadowMapDraw(sceneContext);
+	}
+
+	//Root-Object Shadow-Draw
+	for (GameObject* pChild : m_pChildren)
+	{
+		pChild->RootShadowMapDraw(sceneContext);
 	}
 }
 

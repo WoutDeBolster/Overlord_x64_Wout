@@ -22,6 +22,7 @@
 
 #include "Managers/ContentManager.h"
 #include "Managers/InputManager.h"
+#include "Managers/LightManager.h"
 #include "Managers/MaterialManager.h"
 #include "Managers/SceneManager.h"
 #include "Managers/SoundManager.h"
@@ -36,6 +37,7 @@
 #include "Components/ModelComponent.h"
 #include "Components/SpriteComponent.h" //Week 4
 #include "Components/ControllerComponent.h" //Week 5
+#include "Components/ParticleEmitterComponent.h" //Week 9
 
 #include "Content/ContentLoader.h"
 #include "Content/EffectLoader.h"
@@ -44,17 +46,19 @@
 #include "Content/SpriteFontLoader.h"
 #include "Content/TextureDataLoader.h"
 
+#include "Graphics/ShadowMapRenderer.h" //Week 8
 #include "Graphics/DebugRenderer.h"
-#include "Graphics/SpriteRenderer.h"
-#include "Graphics/TextRenderer.h"
+#include "Graphics/SpriteRenderer.h" //Week 4
+#include "Graphics/TextRenderer.h" //Week 5
 
 #include "Misc/BaseMaterial.h"
 #include "Misc/Material.h"
 #include "Misc/MeshFilter.h"
-#include "Misc/ModelAnimator.h"
+#include "Misc/ModelAnimator.h" //Week 7
 #include "Misc/RenderTarget.h"
-#include "Misc/SpriteFont.h"
+#include "Misc/SpriteFont.h" //Week 4
 #include "Misc/TextureData.h"
+#include "Misc/PostProcessingMaterial.h" //Week 10
 
 #include "PhysX/OverlordSimulationFilterShader.h"
 #include "PhysX/PhysxAllocator.h"

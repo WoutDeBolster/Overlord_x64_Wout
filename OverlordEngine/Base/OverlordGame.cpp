@@ -24,6 +24,7 @@ OverlordGame::~OverlordGame()
 	SoundManager::Destroy();
 	SpriteRenderer::Destroy();
 	TextRenderer::Destroy();
+	ShadowMapRenderer::Destroy();
 	Logger::Release(); //TODO > Singleton
 
 	//ImGui Cleanup
@@ -326,6 +327,7 @@ HRESULT OverlordGame::InitializeGame()
 	SceneManager::Create(m_GameContext);
 	SpriteRenderer::Create(m_GameContext);
 	TextRenderer::Create(m_GameContext);
+	ShadowMapRenderer::Create(m_GameContext);
 
 	//***************
 	//GAME INITIALIZE

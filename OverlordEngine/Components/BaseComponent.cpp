@@ -1,5 +1,13 @@
 #include "stdafx.h"
 
+UINT BaseComponent::m_ComponentCounter{};
+
+BaseComponent::BaseComponent()
+{
+	++m_ComponentCounter;
+	m_ComponentId = m_ComponentCounter;
+}
+
 void BaseComponent::RootInitialize(const SceneContext& sceneContext)
 {
 	//assert(!m_IsInitialized); //Shouldn't be called more than once...

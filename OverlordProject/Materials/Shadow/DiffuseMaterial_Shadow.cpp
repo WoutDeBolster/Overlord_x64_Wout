@@ -1,7 +1,7 @@
 #include "stdafx.h"
 #include "DiffuseMaterial_Shadow.h"
 
-DiffuseMaterial_Shadow::DiffuseMaterial_Shadow():
+DiffuseMaterial_Shadow::DiffuseMaterial_Shadow() :
 	Material(L"Effects/Shadow/PosNormTex3D_Shadow.fx")
 {}
 
@@ -15,7 +15,7 @@ void DiffuseMaterial_Shadow::InitializeEffectVariables()
 {
 }
 
-void DiffuseMaterial_Shadow::OnUpdateModelVariables(const SceneContext& /*sceneContext*/, const ModelComponent* /*pModel*/) const
+void DiffuseMaterial_Shadow::OnUpdateModelVariables(const SceneContext& sceneContext, const ModelComponent* pModel) const
 {
 	/*
 	 * TODO_W8
@@ -28,8 +28,14 @@ void DiffuseMaterial_Shadow::OnUpdateModelVariables(const SceneContext& /*sceneC
 	 *
 	 * 3. Update the Light Direction (retrieve the direction from the LightManager > sceneContext)
 	*/
+	const auto pShadowMapRenderer{ ShadowMapRenderer::Get() };
+	XMFLOAT4X4 modelWorld{ pModel->GetTransform()->GetWorld() };
+	XMFLOAT4X4 lightVP{ pShadowMapRenderer->GetLightVP() };
+	XMFLOAT4X4 ligthWVP{};
+	XMStoreFloat4x4(&ligthWVP, XMLoadFloat4x4(&modelWorld) * XMLoadFloat4x4(&lightVP));
+	SetVariable_Matrix(L"gWorldViewProj_Light", ligthWVP);
 
-	//Update Shadow Variables
-	//const auto pShadowMapRenderer = ShadowMapRenderer::Get();
-	//...
+	SetVariable_Texture(L"gShadowMap", pShadowMapRenderer->GetShadowMap());
+
+	SetVariable_Vector(L"gLightDirection", sceneContext.pLights->GetDirectionalLight().direction);
 }

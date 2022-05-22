@@ -1,7 +1,7 @@
 #include "stdafx.h"
 #include "ModelComponent.h"
 
-ModelComponent::ModelComponent(const std::wstring& assetFile, bool castShadows):
+ModelComponent::ModelComponent(const std::wstring& assetFile, bool castShadows) :
 	m_AssetFile(assetFile),
 	m_CastShadows(castShadows)
 {
@@ -21,7 +21,7 @@ void ModelComponent::Initialize(const SceneContext& sceneContext)
 	m_pMeshFilter->BuildIndexBuffer(sceneContext);
 
 	//Resize Materials Array (if needed)
-	if(m_Materials.size() < m_pMeshFilter->GetMeshCount())
+	if (m_Materials.size() < m_pMeshFilter->GetMeshCount())
 	{
 		m_Materials.resize(m_pMeshFilter->GetMeshCount(), nullptr);
 	}
@@ -31,22 +31,24 @@ void ModelComponent::Initialize(const SceneContext& sceneContext)
 
 	if (m_MaterialChanged)
 	{
-		for(auto& subMesh: m_pMeshFilter->GetMeshes())
+		for (auto& subMesh : m_pMeshFilter->GetMeshes())
 		{
-			const auto pMaterial = m_Materials[subMesh.id]!=nullptr?m_Materials[subMesh.id]:m_pDefaultMaterial;
+			const auto pMaterial = m_Materials[subMesh.id] != nullptr ? m_Materials[subMesh.id] : m_pDefaultMaterial;
 			m_pMeshFilter->BuildVertexBuffer(sceneContext, pMaterial, subMesh.id);
 		}
-		
+
 		m_MaterialChanged = false;
 	}
 
-	if(m_CastShadows) //Only if we cast a shadow of course..
+	if (m_CastShadows) //Only if we cast a shadow of course..
 	{
-		TODO_W8(L"Update MeshFilter for ShadowMapGenerator")
+		//TODO_W8(L"Update MeshFilter for ShadowMapGenerator")
 		//1. Use ShadowMapRenderer::UpdateMeshFilter to update this MeshFilter for ShadowMap Rendering
+		ShadowMapRenderer::Get()->UpdateMeshFilter(sceneContext, m_pMeshFilter);
 
-		TODO_W8(L"Enable ShadowMapDraw function call (m_enableShadowMapDraw = true)")
+		//TODO_W8(L"Enable ShadowMapDraw function call (m_enableShadowMapDraw = true)")
 		//2. Make sure to set m_enableShadowMapDraw to true, otherwise BaseComponent::ShadowMapDraw is not called
+		m_enablePostDraw = true;
 	}
 }
 
@@ -108,16 +110,16 @@ void ModelComponent::ShadowMapDraw(const SceneContext& /*sceneContext*/)
 	if (!m_CastShadows)return;
 
 	TODO_W8(L"Draw Mesh to ShadowMapRenderer (Static/Skinned)")
-	//This function is only called during the ShadowPass (and if m_enableShadowMapDraw is true)
-	//Here we want to Draw this Mesh to the ShadowMap, using the ShadowMapRenderer::DrawMesh function
+		//This function is only called during the ShadowPass (and if m_enableShadowMapDraw is true)
+		//Here we want to Draw this Mesh to the ShadowMap, using the ShadowMapRenderer::DrawMesh function
 
-	//1. Call ShadowMapRenderer::DrawMesh with the required function arguments BUT boneTransforms are only required for skinned meshes of course..
+		//1. Call ShadowMapRenderer::DrawMesh with the required function arguments BUT boneTransforms are only required for skinned meshes of course..
 }
 
 void ModelComponent::SetMaterial(BaseMaterial* pMaterial, UINT8 submeshId)
 {
 	//Resize Materials Array (if needed)
-	if(m_Materials.size() <= submeshId)
+	if (m_Materials.size() <= submeshId)
 	{
 		m_Materials.resize(submeshId + 1, nullptr);
 	}
@@ -134,7 +136,7 @@ void ModelComponent::SetMaterial(BaseMaterial* pMaterial, UINT8 submeshId)
 		return;
 	}
 
-	if(m_pDefaultMaterial == nullptr)
+	if (m_pDefaultMaterial == nullptr)
 	{
 		m_pDefaultMaterial = pMaterial;
 	}
@@ -145,7 +147,7 @@ void ModelComponent::SetMaterial(BaseMaterial* pMaterial, UINT8 submeshId)
 	if (m_IsInitialized && GetScene())
 	{
 		ASSERT_IF(m_pMeshFilter->GetMeshCount() <= submeshId, L"Invalid SubMeshID({}) for current MeshFilter({} submeshes)", submeshId, m_pMeshFilter->GetMeshCount())
-		m_pMeshFilter->BuildVertexBuffer(GetScene()->GetSceneContext(), pMaterial, submeshId);
+			m_pMeshFilter->BuildVertexBuffer(GetScene()->GetSceneContext(), pMaterial, submeshId);
 		m_MaterialChanged = false;
 	}
 }

@@ -406,6 +406,7 @@ void GameScene::SetActiveCamera(CameraComponent* pCameraComponent)
 	//Disable current active camera (if set)
 	const auto currActiveCamera = m_pActiveCamera;
 	m_pActiveCamera = nullptr;
+
 	if (currActiveCamera)
 		currActiveCamera->SetActive(false);
 

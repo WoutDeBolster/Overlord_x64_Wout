@@ -31,7 +31,7 @@ float4 ShadowMapVS_Skinned(float3 position:POSITION, float4 BoneIndices : BLENDI
 {
 	//TODO: return the position of the ANIMATED vertex in correct space (hint: seen from the view of the light)
 	float4 finalPos;
-	float4 transformedPosition;
+	float4 transformedPosition = float4(position, 1);;
 
 	for (int idx = 0; idx < 4; ++idx)
 	{

@@ -17,8 +17,6 @@ void ShadowMapRenderer::Initialize()
 
 	RENDERTARGET_DESC renderTargetDesc{};
 	renderTargetDesc.enableColorBuffer = false;
-	renderTargetDesc.enableColorSRV = false;
-	renderTargetDesc.enableDepthBuffer = true;
 	renderTargetDesc.enableDepthSRV = true;
 	renderTargetDesc.height = m_GameContext.windowHeight;
 	renderTargetDesc.width = m_GameContext.windowWidth;
@@ -29,8 +27,11 @@ void ShadowMapRenderer::Initialize()
 	//	- We want to store the TechniqueContext (struct that contains information about the Technique & InputLayout required for rendering) for both techniques in the m_GeneratorTechniqueContexts array.
 	//	- Use the ShadowGeneratorType enum to retrieve the correct TechniqueContext by ID, and also use that ID to store it inside the array (see BaseMaterial::GetTechniqueContext)
 	m_pShadowMapGenerator = MaterialManager::Get()->CreateMaterial<ShadowMapMaterial>();
-	m_GeneratorTechniqueContexts[(int)ShadowGeneratorType::Static] = m_pShadowMapGenerator->GetTechniqueContext((int)ShadowGeneratorType::Static);
-	m_GeneratorTechniqueContexts[(int)ShadowGeneratorType::Skinned] = m_pShadowMapGenerator->GetTechniqueContext((int)ShadowGeneratorType::Skinned);
+
+	int staticIdx{ static_cast<int>(ShadowGeneratorType::Static) };
+	int skinnedIdx{ static_cast<int>(ShadowGeneratorType::Skinned) };
+	m_GeneratorTechniqueContexts[staticIdx] = m_pShadowMapGenerator->GetTechniqueContext(staticIdx);
+	m_GeneratorTechniqueContexts[skinnedIdx] = m_pShadowMapGenerator->GetTechniqueContext(skinnedIdx);
 }
 
 void ShadowMapRenderer::UpdateMeshFilter(const SceneContext& sceneContext, MeshFilter* pMeshFilter) const
@@ -42,16 +43,12 @@ void ShadowMapRenderer::UpdateMeshFilter(const SceneContext& sceneContext, MeshF
 	//1. Figure out the correct ShadowGeneratorType (either Static, or Skinned) with information from the incoming MeshFilter
 	//2. Retrieve the corresponding TechniqueContext from m_GeneratorTechniqueContexts array (Static/Skinned)
 	//3. Build a corresponding VertexBuffer with data from the relevant TechniqueContext you retrieved in Step2 (MeshFilter::BuildVertexBuffer)
+	int techniqueId{ static_cast<int>(ShadowGeneratorType::Static) };
 	if (pMeshFilter->HasAnimations())
-	{
-		auto technique{ m_GeneratorTechniqueContexts[(int)ShadowGeneratorType::Skinned] };
-		pMeshFilter->BuildVertexBuffer(sceneContext, technique.inputLayoutID, technique.inputLayoutSize, technique.pInputLayoutDescriptions);
-	}
-	else
-	{
-		auto technique{ m_GeneratorTechniqueContexts[(int)ShadowGeneratorType::Static] };
-		pMeshFilter->BuildVertexBuffer(sceneContext, technique.inputLayoutID, technique.inputLayoutSize, technique.pInputLayoutDescriptions);
-	}
+		techniqueId = static_cast<int>(ShadowGeneratorType::Skinned);
+
+	auto techniqueContext{ m_GeneratorTechniqueContexts[techniqueId] };
+	pMeshFilter->BuildVertexBuffer(sceneContext, techniqueContext.inputLayoutID, techniqueContext.inputLayoutSize, techniqueContext.pInputLayoutDescriptions);
 
 }
 
@@ -83,9 +80,9 @@ void ShadowMapRenderer::Begin(const SceneContext& sceneContex)
 	XMMATRIX projectionMartix{ XMMatrixOrthographicLH(100.f * sceneContex.aspectRatio, 100.f, 0.1f, 500.f) };
 
 	auto directionLight{ sceneContex.pLights->GetDirectionalLight() };
-	auto position{ XMVectorSet(directionLight.position.x, directionLight.position.y, directionLight.position.z, 1.f) };
-	auto forward{ XMVectorSet(directionLight.direction.x, directionLight.direction.y, directionLight.direction.z, 0.f) };
-	auto viewMatrix{ XMMatrixLookAtLH(position, position + forward, XMVectorSet(0.f, 1.f, 0.f, 1.f)) };
+	auto position{ XMLoadFloat4(&directionLight.position) };
+	auto forward{ XMLoadFloat4(&directionLight.direction) };
+	auto viewMatrix{ XMMatrixLookAtLH(position, forward, XMVectorSet(0.f, 1.f, 0.f, 1.f)) };
 
 	XMStoreFloat4x4(&m_LightVP, viewMatrix * projectionMartix);
 
@@ -99,7 +96,7 @@ void ShadowMapRenderer::Begin(const SceneContext& sceneContex)
 	m_pShadowRenderTarget->Clear({ 0, 0, 0, 0 });
 }
 
-void ShadowMapRenderer::DrawMesh(const SceneContext&, MeshFilter* pMeshFilter, const XMFLOAT4X4& meshWorld, const std::vector<XMFLOAT4X4>& meshBones)
+void ShadowMapRenderer::DrawMesh(const SceneContext& sceneContext, MeshFilter* pMeshFilter, const XMFLOAT4X4& meshWorld, const std::vector<XMFLOAT4X4>& meshBones)
 {
 	//TODO_W8(L"Implement DrawMesh")
 	//This function is called for every mesh that needs to be rendered on the shadowmap (= cast shadows)
@@ -112,18 +109,12 @@ void ShadowMapRenderer::DrawMesh(const SceneContext&, MeshFilter* pMeshFilter, c
 	//		- if animated, the boneTransforms
 
 	m_pShadowMapGenerator->SetVariable_Matrix(L"gWorld", meshWorld);
-	int id{};
-	MaterialTechniqueContext technique{};
+
+	int techniqueId{ static_cast<int>(ShadowGeneratorType::Static) };
 	if (pMeshFilter->HasAnimations())
 	{
-		id = 1;
-		technique = m_GeneratorTechniqueContexts[(int)ShadowGeneratorType::Skinned];
-		m_pShadowMapGenerator->SetVariable_MatrixArray(L"gBones", reinterpret_cast<const float*>(meshBones.data()), static_cast<UINT>(meshBones.size()));
-	}
-	else
-	{
-		id = 0;
-		technique = m_GeneratorTechniqueContexts[(int)ShadowGeneratorType::Static];
+		techniqueId = static_cast<int>(ShadowGeneratorType::Skinned);
+		m_pShadowMapGenerator->SetVariable_MatrixArray(L"gBones", &meshBones.data()->_11, static_cast<UINT>(meshBones.size()));
 	}
 
 	//4. Setup Pipeline for Drawing (Similar to ModelComponent::Draw, but for our ShadowMapMaterial)
@@ -134,18 +125,19 @@ void ShadowMapRenderer::DrawMesh(const SceneContext&, MeshFilter* pMeshFilter, c
 	//		- Set IndexBuffer
 	//		- Set correct TechniqueContext on ShadowMapMaterial - use ShadowGeneratorType as ID (BaseMaterial::SetTechnique)
 	//		- Perform Draw Call (same as usual, iterate Technique Passes, Apply, Draw - See ModelComponent::Draw for reference)
-	auto pDeviceContext = m_GameContext.d3dContext.pDeviceContext;
+	auto techniqueContext{ m_GeneratorTechniqueContexts[techniqueId] };
+	auto pDeviceContext = sceneContext.d3dContext.pDeviceContext;
 
 	//Set Inputlayout
-	pDeviceContext->IASetInputLayout(m_pShadowMapGenerator->GetTechniqueContext().pInputLayout);
+	pDeviceContext->IASetInputLayout(techniqueContext.pInputLayout);
 	//Set Primitive Topology
-	pDeviceContext->IASetPrimitiveTopology(D3D10_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	pDeviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
 	for (const auto& subMesh : pMeshFilter->GetMeshes())
 	{
 		//Set Vertex Buffer
 		const UINT offset = 0;
-		const auto& vertexBufferData = pMeshFilter->GetVertexBufferData(technique.inputLayoutID, subMesh.id);
+		const auto& vertexBufferData = pMeshFilter->GetVertexBufferData(techniqueContext.inputLayoutID, subMesh.id);
 		pDeviceContext->IASetVertexBuffers(0, 1, &vertexBufferData.pVertexBuffer, &vertexBufferData.VertexStride, &offset);
 
 		//Set Index Buffer
@@ -153,10 +145,11 @@ void ShadowMapRenderer::DrawMesh(const SceneContext&, MeshFilter* pMeshFilter, c
 
 		//DRAW
 		D3DX11_TECHNIQUE_DESC techDesc{};
-		technique.pTechnique->GetDesc(&techDesc);
+		techniqueContext.pTechnique->GetDesc(&techDesc);
+
 		for (UINT p = 0; p < techDesc.Passes; ++p)
 		{
-			technique.pTechnique->GetPassByIndex(p)->Apply(0, pDeviceContext);
+			techniqueContext.pTechnique->GetPassByIndex(p)->Apply(0, pDeviceContext);
 			pDeviceContext->DrawIndexed(subMesh.indexCount, 0, 0);
 		}
 	}

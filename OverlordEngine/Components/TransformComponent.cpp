@@ -1,7 +1,7 @@
 #include "stdafx.h"
 #include "TransformComponent.h"
 
-TransformComponent::TransformComponent():
+TransformComponent::TransformComponent() :
 	m_Position{ 0, 0, 0 },
 	m_WorldPosition{ 0, 0, 0 },
 	m_Scale{ 1, 1, 1 },
@@ -16,9 +16,9 @@ TransformComponent::TransformComponent():
 bool TransformComponent::CheckIfDirty()
 {
 	//If Parent is dirty == update required (spatial relation)
-	if(const GameObject* pParent = GetGameObject()->GetParent())
+	if (const GameObject* pParent = GetGameObject()->GetParent())
 	{
-		if(pParent->GetTransform()->IsDirty())
+		if (pParent->GetTransform()->IsDirty())
 		{
 			m_IsDirty = true;
 			return true;
@@ -33,12 +33,12 @@ bool TransformComponent::CheckIfDirty()
 	return m_IsDirty;
 }
 
-void TransformComponent::Initialize(const SceneContext& )
+void TransformComponent::Initialize(const SceneContext&)
 {
 	UpdateTransforms();
 }
 
-void TransformComponent::Update(const SceneContext& )
+void TransformComponent::Update(const SceneContext&)
 {
 	m_IsDirty = CheckIfDirty();
 
@@ -50,19 +50,19 @@ void TransformComponent::UpdateTransforms()
 {
 	ASSERT_IF(m_pRigidBodyComponent && m_pControllerComponent, L"Single GameObject can't have a RigidBodyComponent AND ControllerComponent at the same time (remove one)")
 
-	if (m_pRigidBodyComponent && m_IsInitialized)
-	{
-		if (isSet(m_IsTransformChanged, TransformChanged::TRANSLATION))m_pRigidBodyComponent->Translate(m_Position);
-		else m_Position = m_pRigidBodyComponent->GetPosition();
+		if (m_pRigidBodyComponent && m_IsInitialized)
+		{
+			if (isSet(m_IsTransformChanged, TransformChanged::TRANSLATION))m_pRigidBodyComponent->Translate(m_Position);
+			else m_Position = m_pRigidBodyComponent->GetPosition();
 
-		if (isSet(m_IsTransformChanged, TransformChanged::ROTATION)) m_pRigidBodyComponent->Rotate(m_Rotation);
-		else m_Rotation = m_pRigidBodyComponent->GetRotation();
-	}
-	else if(m_pControllerComponent && m_IsInitialized)
-	{
-		if (isSet(m_IsTransformChanged, TransformChanged::TRANSLATION)) m_pControllerComponent->Translate(m_Position);
-		else m_Position = m_pControllerComponent->GetPosition();
-	}
+			if (isSet(m_IsTransformChanged, TransformChanged::ROTATION)) m_pRigidBodyComponent->Rotate(m_Rotation);
+			else m_Rotation = m_pRigidBodyComponent->GetRotation();
+		}
+		else if (m_pControllerComponent && m_IsInitialized)
+		{
+			if (isSet(m_IsTransformChanged, TransformChanged::TRANSLATION)) m_pControllerComponent->Translate(m_Position);
+			else m_Position = m_pControllerComponent->GetPosition();
+		}
 
 	//Calculate World Matrix
 	//**********************
@@ -134,9 +134,9 @@ void TransformComponent::Rotate(float x, float y, float z, bool degrees)
 	if (degrees)
 	{
 		XMStoreFloat4(&m_Rotation,
-		              XMQuaternionRotationRollPitchYaw(XMConvertToRadians(x),
-		                                                        XMConvertToRadians(y),
-		                                                        XMConvertToRadians(z)));
+			XMQuaternionRotationRollPitchYaw(XMConvertToRadians(x),
+				XMConvertToRadians(y),
+				XMConvertToRadians(z)));
 	}
 	else
 	{

@@ -98,6 +98,7 @@
     <ClCompile Include="Materials\Shadow\DiffuseMaterial_Shadow.cpp" />
     <ClCompile Include="Materials\Shadow\DiffuseMaterial_Shadow_Skinned.cpp" />
     <ClCompile Include="Materials\Post\PostBlur.cpp" />
+    <ClCompile Include="Scenes\Game\Portal.cpp" />
     <ClCompile Include="Prefabs\BoneObject.cpp" />
     <ClCompile Include="Materials\ColorMaterial.cpp" />
     <ClCompile Include="Materials\DiffuseMaterial.cpp" />
@@ -152,6 +153,7 @@
     <ClInclude Include="Materials\Shadow\DiffuseMaterial_Shadow.h" />
     <ClInclude Include="Materials\Shadow\DiffuseMaterial_Shadow_Skinned.h" />
     <ClInclude Include="Materials\Post\PostBlur.h" />
+    <ClInclude Include="Scenes\Game\Portal.h" />
     <ClInclude Include="Prefabs\BoneObject.h" />
     <ClInclude Include="Materials\ColorMaterial.h" />
     <ClInclude Include="Materials\DiffuseMaterial.h" />

@@ -7,7 +7,7 @@
 //#define W5
 //#define W6
 //#define W7
-#define W8
+//#define W8
 //#define W9
 //#define W10
 
@@ -15,6 +15,8 @@
 //#define MILESTONE_1
 //#define MILESTONE_2
 //#define MILESTONE_3
+
+#define GAME
 
 #pragma region Lab/Milestone Includes
 #ifdef W3
@@ -82,14 +84,20 @@
 #endif
 #pragma endregion
 
+#ifdef GAME
+#include "Scenes/Game/Portal.h"
+#endif
+#pragma endregion
+
+
 //Game is preparing
-void MainGame::OnGamePreparing(GameContext& /*gameContext*/)
+void MainGame::OnGamePreparing(GameContext& gameContext)
 {
 	//Here you can change some game settings before engine initialize
 	//gameContext.windowWidth=... (default is 1280)
 	//gameContext.windowHeight=... (default is 720)
 
-	//gameContext.windowTitle = L"GP2 - Milestone 3 (2022) | (2DAE13) Doe John";
+	gameContext.windowTitle = L"GP2 - Milestone 3 (2022) | (2DAE14) Wout De Bolster";
 	//gameContext.windowTitle = L"GP2 - Exam Project (2022) | (2DAE13) Doe John";
 }
 
@@ -157,6 +165,10 @@ void MainGame::Initialize()
 	SceneManager::Get()->AddGameScene(new ShadowMappingScene());
 	SceneManager::Get()->AddGameScene(new ParticleScene());
 	SceneManager::Get()->AddGameScene(new PostProcessingScene());
+#endif
+
+#ifdef GAME
+	SceneManager::Get()->AddGameScene(new Portal());
 #endif
 }
 

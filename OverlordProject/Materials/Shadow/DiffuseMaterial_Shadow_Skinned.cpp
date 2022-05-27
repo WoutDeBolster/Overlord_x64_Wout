@@ -41,9 +41,9 @@ void DiffuseMaterial_Shadow_Skinned::OnUpdateModelVariables(const SceneContext& 
 
 	SetVariable_Vector(L"gLightDirection", sceneContext.pLights->GetDirectionalLight().direction);
 
-	if (pModel->GetAnimator())
+	if (pModel->HasAnimator())
 	{
 		auto bones{ pModel->GetAnimator()->GetBoneTransforms() };
-		SetVariable_MatrixArray(L"gBones", reinterpret_cast<const float*>(bones.data()), static_cast<UINT>(bones.size()));
+		SetVariable_MatrixArray(L"gBones", &bones.data()->_11, static_cast<UINT>(bones.size()));
 	}
 }

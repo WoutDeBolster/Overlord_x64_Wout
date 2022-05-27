@@ -63,11 +63,13 @@ void Character::Update(const SceneContext& sceneContext)
 		//Only if the Left Mouse Button is Down >
 			// Store the MouseMovement in the local 'look' variable (cast is required)
 		//Optional: in case look.x AND look.y are near zero, you could use the Right ThumbStickPosition for look
-		if (sceneContext.pInput->IsMouseButton(InputState::down, VK_LBUTTON))
-		{
-			look = XMFLOAT2(static_cast<float>(sceneContext.pInput->GetMouseMovement().x),
-				static_cast<float>(sceneContext.pInput->GetMouseMovement().y));
-		}
+		look = XMFLOAT2(static_cast<float>(sceneContext.pInput->GetMouseMovement().x),
+			static_cast<float>(sceneContext.pInput->GetMouseMovement().y));
+		//if (sceneContext.pInput->IsMouseButton(InputState::down, VK_LBUTTON))
+		//{
+		//	look = XMFLOAT2(static_cast<float>(sceneContext.pInput->GetMouseMovement().x),
+		//		static_cast<float>(sceneContext.pInput->GetMouseMovement().y));
+		//}
 
 		//************************
 		//GATHERING TRANSFORM INFO

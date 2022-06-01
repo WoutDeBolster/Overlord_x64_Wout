@@ -46,7 +46,7 @@ protected:
 	virtual void PostDraw() {};
 	virtual void ShadowDraw() {};
 
-	virtual void OnGUI(){}
+	virtual void OnGUI() {}
 	virtual void OnSceneActivated() {}
 	virtual void OnSceneDeactivated() {}
 

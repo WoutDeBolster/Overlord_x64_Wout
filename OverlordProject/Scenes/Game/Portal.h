@@ -24,10 +24,11 @@ private:
 	bool bluePortal{ false };
 	bool OrangePortal{ false };
 
-	CameraComponent* m_pBlueCam = nullptr;
-	CameraComponent* m_pOrangeCam = nullptr;
+	//CameraComponent* m_pBlueCam = nullptr;
+	//CameraComponent* m_pOrangeCam = nullptr;
 
 	// functions
+	void InitPortals();
 	void InitCharater();
 	void InitObjects();
 
@@ -47,7 +48,16 @@ private:
 	// objects
 	GameObject* m_pCube = nullptr;
 
+	GameObject* m_pBluePortal = nullptr;
+	GameObject* m_pOrangePortal = nullptr;
+
+	GameObject* m_pPortalGun = nullptr;
+
 	// mats
-	DiffuseMaterial* m_pDiffMat = nullptr;
+	DiffuseMaterial* m_pCubeMat = nullptr;
+	DiffuseMaterial* m_pCharacterMat = nullptr;
+	DiffuseMaterial* m_pBluePortalMat = nullptr;
+	DiffuseMaterial* m_pOrangePortalMat = nullptr;
+	DiffuseMaterial* m_pPortalGunMat = nullptr;
 };
 

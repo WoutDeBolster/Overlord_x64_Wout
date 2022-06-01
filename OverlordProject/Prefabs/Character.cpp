@@ -87,7 +87,7 @@ void Character::Update(const SceneContext& sceneContext)
 		//Make sure this calculated on a framerate independent way and uses CharacterDesc::rotationSpeed.
 		//Rotate this character based on the TotalPitch (X) and TotalYaw (Y)
 		m_TotalYaw += m_CharacterDesc.rotationSpeed * look.x * sceneContext.pGameTime->GetElapsed();
-		m_TotalPitch += m_CharacterDesc.rotationSpeed * look.y * sceneContext.pGameTime->GetElapsed();
+		m_TotalPitch += (m_CharacterDesc.rotationSpeed - 20.f) * look.y * sceneContext.pGameTime->GetElapsed();
 		transformComp->Rotate(m_TotalPitch, m_TotalYaw, 0.f);
 
 		//********

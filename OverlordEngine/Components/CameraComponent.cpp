@@ -63,7 +63,7 @@ void CameraComponent::SetActive(bool active)
 	pScene->SetActiveCamera(active ? this : nullptr); //Switch to default camera if active==false
 }
 
-GameObject* CameraComponent::Pick(CollisionGroup ignoreGroups) const
+GameObject* CameraComponent::Pick(CollisionGroup ignoreGroups, PxVec3& pos)
 {
 	//TODO_W5(L"Implement Picking Logic")
 	auto sceneContext{ m_pScene->GetSceneContext() };
@@ -98,6 +98,7 @@ GameObject* CameraComponent::Pick(CollisionGroup ignoreGroups) const
 	PxRaycastBuffer hit{};
 	if (m_pScene->GetPhysxProxy()->Raycast(rayStart, raydirection, PX_MAX_F32, hit, PxHitFlag::eDEFAULT, filterData))
 	{
+		pos = hit.block.position;
 		return reinterpret_cast<BaseComponent*>(hit.block.actor->userData)->GetGameObject();
 	}
 	return nullptr;

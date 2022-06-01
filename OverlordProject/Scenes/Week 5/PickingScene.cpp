@@ -27,7 +27,8 @@ void PickingScene::Update()
 {
 	if (InputManager::IsMouseButton(InputState::pressed, VK_RBUTTON))
 	{
-		if (const auto pPickedObject = m_SceneContext.pCamera->Pick())
+		PxVec3 hitPos{};
+		if (const auto pPickedObject = m_SceneContext.pCamera->Pick(CollisionGroup::None, hitPos))
 		{
 			RemoveChild(pPickedObject, true);
 		}

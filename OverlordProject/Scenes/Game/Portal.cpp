@@ -28,6 +28,7 @@ void Portal::Initialize()
 	InitCharater();
 	InitObjects();
 	InitPortals();
+	InitParticles();
 
 	//// cam top down
 	//auto camEmpty = new GameObject();
@@ -96,25 +97,23 @@ void Portal::Update()
 			if (pPickedObject->GetTag() == L"PortalSurface")
 			{
 				m_pOrangePortal->GetTransform()->Translate(hitPos.x, hitPos.y, hitPos.z);
-				//pPickedObject->GetTransform()->GetForward()
 			}
 		}
 	}
 
-	// hitting portal
 }
 
 void Portal::InitPortals()
 {
-	const auto pDefaultMaterial = PxGetPhysics().createMaterial(0.5f, 0.5f, 0.5f);
+	//const auto pDefaultMaterial = PxGetPhysics().createMaterial(0.5f, 0.5f, 0.5f);
 
 	m_pBluePortal = AddChild(new GameObject());
 	m_pBluePortal->AddComponent<ModelComponent>(new ModelComponent(L"Meshes/Portal/PortalPlaneTest.ovm"));
 	m_pBluePortalMat = MaterialManager::Get()->CreateMaterial<DiffuseMaterial>();
-	m_pBluePortalMat->SetDiffuseTexture(L"Textures/Portal/BluePortal.png");
+	m_pBluePortalMat->SetDiffuseTexture(L"Textures/Portal/BluePortalFake.png");
 	m_pBluePortal->GetComponent<ModelComponent>()->SetMaterial(m_pBluePortalMat);
 
-	m_pBluePortal->GetTransform()->Translate(0.f, 0.f, 0.f);
+	m_pBluePortal->GetTransform()->Translate(0.f, 100.f, 0.f);
 	m_pBluePortal->GetTransform()->Scale(0.02f, 0.02f, 0.02f);
 
 	m_pBluePortal->SetOnTriggerCallBack([=](GameObject*, GameObject* person, PxTriggerAction action)
@@ -131,13 +130,13 @@ void Portal::InitPortals()
 	m_pOrangePortal = AddChild(new GameObject());
 	m_pOrangePortal->AddComponent<ModelComponent>(new ModelComponent(L"Meshes/Portal/PortalPlaneTest.ovm"));
 	m_pOrangePortalMat = MaterialManager::Get()->CreateMaterial<DiffuseMaterial>();
-	m_pOrangePortalMat->SetDiffuseTexture(L"Textures/Portal/OrangePortal.png");
+	m_pOrangePortalMat->SetDiffuseTexture(L"Textures/Portal/OrangePortalFake.png");
 	m_pOrangePortal->GetComponent<ModelComponent>()->SetMaterial(m_pOrangePortalMat);
-	const auto pOrangePortalActor = m_pOrangePortal->AddComponent(new RigidBodyComponent(true));
-	const auto pPxTriangleMesh = ContentManager::Load<PxTriangleMesh>(L"Meshes/Portal/PortalPlaneTest.ovpt");
-	pOrangePortalActor->AddCollider(PxTriangleMeshGeometry{ pPxTriangleMesh, PxMeshScale({1.f, 1.f, 1.f}) }, *pDefaultMaterial);
+	//const auto pOrangePortalActor = m_pOrangePortal->AddComponent(new RigidBodyComponent(true));
+	//const auto pPxTriangleMesh = ContentManager::Load<PxTriangleMesh>(L"Meshes/Portal/PortalPlaneTest.ovpt");
+	//pOrangePortalActor->AddCollider(PxTriangleMeshGeometry{ pPxTriangleMesh, PxMeshScale({1.f, 1.f, 1.f}) }, *pDefaultMaterial);
 
-	m_pOrangePortal->GetTransform()->Translate(0.f, 0.f, 0.f);
+	m_pOrangePortal->GetTransform()->Translate(0.f, 100.f, 0.f);
 	m_pOrangePortal->GetTransform()->Scale(0.02f, 0.02f, 0.02f);
 
 	m_pOrangePortal->SetOnTriggerCallBack([=](GameObject*, GameObject*, PxTriggerAction action)
@@ -245,4 +244,26 @@ void Portal::InitObjects()
 	m_pCubeMat = MaterialManager::Get()->CreateMaterial<DiffuseMaterial>();
 	m_pCubeMat->SetDiffuseTexture(L"Textures/Portal/metal_box.png");
 	m_pCube->GetComponent<ModelComponent>()->SetMaterial(m_pCubeMat);
+}
+
+void Portal::InitParticles()
+{
+	//Particle System
+	ParticleEmitterSettings settings{};
+	settings.velocity = { 0.f,0.f,0.f };
+	settings.minSize = 1.f;
+	settings.maxSize = 2.f;
+	settings.minEnergy = 0.2f;
+	settings.maxEnergy = 1.f;
+	settings.minScale = 3.5f;
+	settings.maxScale = 5.5f;
+	settings.minEmitterRadius = .2f;
+	settings.maxEmitterRadius = .5f;
+	settings.color = { 0.f, 0.f, 1.f, .8f };
+
+	m_pBluePortal->AddComponent(new ParticleEmitterComponent(L"Textures/Portal/blueEffect.png", settings, 10));
+
+	settings.color = { 1.f, 0.5f, 1.f, .8f };
+
+	m_pOrangePortal->AddComponent(new ParticleEmitterComponent(L"Textures/Portal/orangeEffect.png", settings, 10));
 }

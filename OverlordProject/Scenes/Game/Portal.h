@@ -31,6 +31,7 @@ private:
 	void InitPortals();
 	void InitCharater();
 	void InitObjects();
+	void InitParticles();
 
 	// character
 	enum InputIds

@@ -93,12 +93,13 @@
     <PostBuildEvent />
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Scenes\Bomberman\Bomber.cpp" />
     <ClCompile Include="Materials\DiffuseMaterial_Skinned.cpp" />
     <ClCompile Include="Materials\Post\PostGrayscale.cpp" />
     <ClCompile Include="Materials\Shadow\DiffuseMaterial_Shadow.cpp" />
     <ClCompile Include="Materials\Shadow\DiffuseMaterial_Shadow_Skinned.cpp" />
     <ClCompile Include="Materials\Post\PostBlur.cpp" />
-    <ClCompile Include="Scenes\Game\Portal.cpp" />
+    <ClCompile Include="Scenes\Portal\Portal.cpp" />
     <ClCompile Include="Prefabs\BoneObject.cpp" />
     <ClCompile Include="Materials\ColorMaterial.cpp" />
     <ClCompile Include="Materials\DiffuseMaterial.cpp" />
@@ -110,7 +111,6 @@
     <ClCompile Include="Prefabs\CubePrefab.cpp" />
     <ClCompile Include="Prefabs\SpherePrefab.cpp" />
     <ClCompile Include="Prefabs\TorusPrefab.cpp" />
-    <ClCompile Include="Scenes\Week 3\ColorMaterial.cpp" />
     <ClCompile Include="Scenes\Week 3\MinionScene.cpp" />
     <ClCompile Include="Materials\SpikyMaterial.cpp" />
     <ClCompile Include="Scenes\Week 4\SpikyScene.cpp" />
@@ -148,12 +148,13 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Scenes\Bomberman\Bomber.h" />
     <ClInclude Include="Materials\DiffuseMaterial_Skinned.h" />
     <ClInclude Include="Materials\Post\PostGrayscale.h" />
     <ClInclude Include="Materials\Shadow\DiffuseMaterial_Shadow.h" />
     <ClInclude Include="Materials\Shadow\DiffuseMaterial_Shadow_Skinned.h" />
     <ClInclude Include="Materials\Post\PostBlur.h" />
-    <ClInclude Include="Scenes\Game\Portal.h" />
+    <ClInclude Include="Scenes\Portal\Portal.h" />
     <ClInclude Include="Prefabs\BoneObject.h" />
     <ClInclude Include="Materials\ColorMaterial.h" />
     <ClInclude Include="Materials\DiffuseMaterial.h" />
@@ -165,7 +166,6 @@
     <ClInclude Include="Prefabs\CubePrefab.h" />
     <ClInclude Include="Prefabs\SpherePrefab.h" />
     <ClInclude Include="Prefabs\TorusPrefab.h" />
-    <ClInclude Include="Scenes\Week 3\ColorMaterial.h" />
     <ClInclude Include="Scenes\Week 3\MinionScene.h" />
     <ClInclude Include="Materials\SpikyMaterial.h" />
     <ClInclude Include="Scenes\Week 4\SpikyScene.h" />

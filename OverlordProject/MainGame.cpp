@@ -85,7 +85,7 @@
 #pragma endregion
 
 #ifdef GAME
-#include "Scenes/Game/Portal.h"
+#include "Scenes/Bomberman/Bomber.h"
 #endif
 #pragma endregion
 
@@ -168,7 +168,7 @@ void MainGame::Initialize()
 #endif
 
 #ifdef GAME
-	SceneManager::Get()->AddGameScene(new Portal());
+	SceneManager::Get()->AddGameScene(new Bomber());
 #endif
 }
 

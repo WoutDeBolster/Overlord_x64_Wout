@@ -1,4 +1,6 @@
 #pragma once
+class Character;
+
 class Bomber : public GameScene
 {
 public:

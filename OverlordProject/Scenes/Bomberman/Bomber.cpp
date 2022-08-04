@@ -2,7 +2,10 @@
 #include "Bomber.h"
 
 #include "Prefabs/Character.h"
+
 #include "Materials/ColorMaterial.h"
+#include "Materials/UberMaterial.h"
+#include "Materials/DiffuseMaterial.h"
 
 Bomber::Bomber()
 	: GameScene(L"BomberScene")
@@ -13,6 +16,15 @@ void Bomber::Initialize()
 {
 	m_SceneContext.settings.enableOnGUI = true;
 	m_SceneContext.settings.drawGrid = false;
+
+	// cam top down
+	auto camEmpty = new GameObject();
+	auto cam = new CameraComponent();
+	camEmpty->GetTransform()->Translate(0.f, 100.f, -40.f);
+	camEmpty->GetTransform()->Rotate(65.f, 0.f, 0.f);
+	camEmpty->AddComponent(cam);
+	AddChild(camEmpty);
+	SetActiveCamera(cam);
 
 	//Ground Plane
 	const auto pDefaultMaterial = PxGetPhysics().createMaterial(0.5f, 0.5f, 0.5f);
@@ -28,6 +40,12 @@ void Bomber::Initialize()
 
 	m_pCharacter = AddChild(new Character(characterDesc));
 	m_pCharacter->GetTransform()->Translate(0.f, 5.f, 0.f);
+	m_pCharacter->AddComponent<ModelComponent>(new ModelComponent(L"BomberMan/Ch09_nonPBR/Ch09_nonPBR.ovm"));
+
+	DiffuseMaterial* pCharaterMat = MaterialManager::Get()->CreateMaterial<DiffuseMaterial>();
+	pCharaterMat->SetDiffuseTexture(L"BomberMan/Ch09_nonPBR/Ch09_1001_Diffuse.png");
+	m_pCharacter->GetComponent<ModelComponent>()->SetMaterial(pCharaterMat);
+	m_pCharacter->GetComponent<ModelComponent>()->GetTransform()->Scale(0.05f, 0.05f, 0.05f);
 
 	//Simple Level
 	const auto pLevelObject = AddChild(new GameObject());

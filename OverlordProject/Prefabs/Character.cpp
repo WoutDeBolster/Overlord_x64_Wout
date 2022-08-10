@@ -68,7 +68,7 @@ void Character::Update(const SceneContext& sceneContext)
 		m_CurrentDirection.z = 0.f;
 	}
 
-	std::cout << m_CurrentDirection.x << ", " << m_CurrentDirection.y << ", " << m_CurrentDirection.z << std::endl;
+	//std::cout << m_CurrentDirection.x << ", " << m_CurrentDirection.y << ", " << m_CurrentDirection.z << std::endl;
 
 	// rotate character manualy
 	if (m_CurrentDirection.x == 1.f)
@@ -136,7 +136,6 @@ void Character::Update(const SceneContext& sceneContext)
 		//XMStoreFloat3(&m_CurrentDirection, forward * move.y + right * move.x);
 		m_MoveSpeed += currentAcceleration;
 		m_MoveSpeed = std::clamp(m_MoveSpeed, 0.f, m_CharacterDesc.maxMoveSpeed);
-		std::cout << m_CurrentDirection.x << ", " << m_CurrentDirection.y << ", " << m_CurrentDirection.z << ", " << std::endl;
 	}
 	else
 	{
@@ -170,10 +169,10 @@ void Character::Update(const SceneContext& sceneContext)
 			m_TotalVelocity.y = -m_CharacterDesc.maxFallSpeed;
 		}
 	}
-	else if (sceneContext.pInput->IsActionTriggered(m_CharacterDesc.actionId_Jump))
-	{
-		m_TotalVelocity.y = m_CharacterDesc.JumpSpeed;
-	}
+	//else if (sceneContext.pInput->IsActionTriggered(m_CharacterDesc.actionId_Jump))
+	//{
+	//	m_TotalVelocity.y = m_CharacterDesc.JumpSpeed;
+	//}
 	else
 	{
 		m_TotalVelocity.y = 0;

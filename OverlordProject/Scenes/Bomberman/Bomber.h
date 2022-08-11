@@ -52,6 +52,6 @@ private:
 	std::vector<Bomb> m_Bombs;
 	std::vector<TimedParticle> m_ActiveParticles;
 	int m_MaxAmountBombs{ 10 };
-	int m_ExplosionLenght{ 1 };
+	int m_ExplosionLenght{ 2 };
 };
 

@@ -3,10 +3,13 @@
 
 #include "Prefabs/Character.h"
 #include "Prefabs/CubePrefab.h"
+#include "Prefabs/SpherePrefab.h"
 
 #include "Materials/ColorMaterial.h"
 #include "Materials/UberMaterial.h"
 #include "Materials/DiffuseMaterial.h"
+#include "Materials/Shadow/DiffuseMaterial_Shadow.h"
+#include "Materials/Shadow/DiffuseMaterial_Shadow_Skinned.h"
 
 Bomber::Bomber()
 	: GameScene(L"BomberScene")
@@ -18,10 +21,12 @@ void Bomber::Initialize()
 	m_SceneContext.settings.enableOnGUI = true;
 	m_SceneContext.settings.drawGrid = false;
 
+	m_SceneContext.pLights->SetDirectionalLight({ -95.6139526f,66.1346436f,-41.1850471f }, { 0.740129888f, -0.597205281f, 0.309117377f });
+
 	// cam top down
 	auto camEmpty = new GameObject();
 	auto cam = new CameraComponent();
-	camEmpty->GetTransform()->Translate(0.f, 100.f, -40.f);
+	camEmpty->GetTransform()->Translate(15.f, 80.f, -20.f);
 	camEmpty->GetTransform()->Rotate(65.f, 0.f, 0.f);
 	camEmpty->AddComponent(cam);
 	AddChild(camEmpty);
@@ -33,6 +38,16 @@ void Bomber::Initialize()
 
 	InitCharacter();
 	InitLevel();
+
+	//// sphere 1 (group 1 and group 2)
+	//auto pSphereObj = new SpherePrefab(1.f, 10, XMFLOAT4(Colors::Red));
+	//auto pSphereActor = pSphereObj->AddComponent(new RigidBodyComponent(false));
+	//pSphereActor->AddCollider(PxSphereGeometry{ 1.f }, *pDefaultMaterial);
+	//pSphereActor->SetCollisionGroup(CollisionGroup::Group1);
+
+	//pSphereActor->GetTransform()->Translate(0.f, 40.f, 0.f);
+	//pSphereActor->GetTransform()->Scale(5.f);
+	//AddChild(pSphereObj);
 }
 
 void Bomber::Update()
@@ -61,7 +76,7 @@ void Bomber::InitCharacter()
 	const auto pDefaultMaterial = PxGetPhysics().createMaterial(0.5f, 0.5f, 0.5f);
 
 	//Character
-	CharacterDesc characterDesc{ pDefaultMaterial };
+	CharacterDesc characterDesc{ pDefaultMaterial, 0.5f, 0.1f };
 	characterDesc.actionId_MoveForward = CharacterMoveForward;
 	characterDesc.actionId_MoveBackward = CharacterMoveBackward;
 	characterDesc.actionId_MoveLeft = CharacterMoveLeft;
@@ -70,12 +85,18 @@ void Bomber::InitCharacter()
 
 	m_pCharacter = AddChild(new Character(characterDesc));
 	m_pCharacter->GetTransform()->Translate(0.f, 5.f, 0.f);
-	m_pCharacter->AddComponent<ModelComponent>(new ModelComponent(L"BomberMan/Ch09_nonPBR/Ch09_nonPBR.ovm"));
+	const auto pModel = new ModelComponent(L"BomberMan/Ch09_nonPBR/Ch09_nonPBR2.ovm");
+	m_pCharacter->AddComponent<ModelComponent>(pModel);
+
+	if (const auto pAnimator = pModel->GetAnimator())
+	{
+		pAnimator->SetAnimation(2);
+		pAnimator->Play();
+	}
 
 	DiffuseMaterial* pCharaterMat = MaterialManager::Get()->CreateMaterial<DiffuseMaterial>();
 	pCharaterMat->SetDiffuseTexture(L"BomberMan/Ch09_nonPBR/Ch09_1001_Diffuse.png");
 	m_pCharacter->GetComponent<ModelComponent>()->SetMaterial(pCharaterMat);
-	//m_pCharacter->GetComponent<ModelComponent>()->GetTransform()->Scale(0.05f, 0.05f, 0.05f);
 	m_pCharacter->GetTransform()->Scale(0.05f, 0.05f, 0.05f);
 
 	m_pCharacter->GetComponent<ControllerComponent>()->SetCollisionGroup(CollisionGroup::Group1 & CollisionGroup::Group0);
@@ -100,6 +121,12 @@ void Bomber::InitCharacter()
 void Bomber::InitLevel()
 {
 	const auto pDefaultMaterial = PxGetPhysics().createMaterial(0.5f, 0.5f, 0.5f);
+	const auto pGroundMaterial1 = MaterialManager::Get()->CreateMaterial<DiffuseMaterial_Shadow>();
+	pGroundMaterial1->SetDiffuseTexture(L"Textures/ironGreen.jpg");
+	const auto pGroundMaterial2 = MaterialManager::Get()->CreateMaterial<DiffuseMaterial_Shadow>();
+	pGroundMaterial2->SetDiffuseTexture(L"Textures/ironGrey.jpg");
+	const auto pWallMaterial1 = MaterialManager::Get()->CreateMaterial<DiffuseMaterial_Shadow>();
+	pWallMaterial1->SetDiffuseTexture(L"Textures/brickGrey.jpg");
 
 	////Simple Level
 	//const auto pLevelObject = AddChild(new GameObject());
@@ -126,27 +153,41 @@ void Bomber::InitLevel()
 		{
 			if (ColorGreen)
 			{
-				CubePrefab* newCube{ new CubePrefab(dimensions, forestGreen) };
-				newCube->GetTransform()->Translate(static_cast<float>(x), 0.f, static_cast<float>(y));
-				auto pCubeActor = newCube->AddComponent(new RigidBodyComponent(true));
+				const auto pGroundObj = new GameObject();
+
+				const auto pGroundModel = new ModelComponent(L"Meshes/Cube.ovm");
+				pGroundModel->SetMaterial(pGroundMaterial1);
+				pGroundObj->AddComponent(pGroundModel);
+
+				const auto pColisionObj = new GameObject();
+				auto pCubeActor = pColisionObj->AddComponent(new RigidBodyComponent(true));
 				pCubeActor->AddCollider(PxBoxGeometry{ (dimensions.x * scale) / 2.f, (dimensions.y * scale) / 2.f, (dimensions.z * scale) / 2.f }, *pDefaultMaterial);
 				pCubeActor->SetCollisionGroup(CollisionGroup::Group1);
 
-				pCubeActor->GetTransform()->Translate(static_cast<float>(x * scale), 0.f, static_cast<float>(y * scale));
-				pCubeActor->GetTransform()->Scale(scale);
-				pLevelGrid->AddChild(newCube);
+				pColisionObj->GetTransform()->Translate(static_cast<float>(x * scale), 0.f, static_cast<float>(y * scale));
+				pGroundObj->GetTransform()->Translate(static_cast<float>(x * scale), 0.f, static_cast<float>(y * scale) + 2.5f);
+				pGroundObj->GetTransform()->Scale(scale);
+				pLevelGrid->AddChild(pGroundObj);
+				pLevelGrid->AddChild(pColisionObj);
 			}
 			else
 			{
-				CubePrefab* newCube{ new CubePrefab(dimensions, lightGray) };
-				newCube->GetTransform()->Translate(static_cast<float>(x), 0.f, static_cast<float>(y));
-				auto pCubeActor = newCube->AddComponent(new RigidBodyComponent(true));
+				const auto pGroundObj = new GameObject();
+
+				const auto pGroundModel = new ModelComponent(L"Meshes/Cube.ovm");
+				pGroundModel->SetMaterial(pGroundMaterial2);
+				pGroundObj->AddComponent(pGroundModel);
+
+				const auto pColisionObj = new GameObject();
+				auto pCubeActor = pColisionObj->AddComponent(new RigidBodyComponent(true));
 				pCubeActor->AddCollider(PxBoxGeometry{ (dimensions.x * scale) / 2.f, (dimensions.y * scale) / 2.f, (dimensions.z * scale) / 2.f }, *pDefaultMaterial);
 				pCubeActor->SetCollisionGroup(CollisionGroup::Group1);
 
-				pCubeActor->GetTransform()->Translate(static_cast<float>(x * scale), 0.f, static_cast<float>(y * scale));
-				pCubeActor->GetTransform()->Scale(scale);
-				pLevelGrid->AddChild(newCube);
+				pColisionObj->GetTransform()->Translate(static_cast<float>(x * scale), 0.f, static_cast<float>(y * scale));
+				pGroundObj->GetTransform()->Translate(static_cast<float>(x * scale), 0.f, static_cast<float>(y * scale) + 2.5f);
+				pGroundObj->GetTransform()->Scale(scale);
+				pLevelGrid->AddChild(pGroundObj);
+				pLevelGrid->AddChild(pColisionObj);
 			}
 			ColorGreen = !ColorGreen;
 		}
@@ -165,45 +206,77 @@ void Bomber::InitLevel()
 	for (int x = 0; x < borderWidth; x++)
 	{
 		// bottom row
-		CubePrefab* newCubeBottom{ new CubePrefab(dimensions, darkGrey) };
-		auto pCubeActorBottom = newCubeBottom->AddComponent(new RigidBodyComponent(true));
-		pCubeActorBottom->AddCollider(PxBoxGeometry{ dimensions.x / 2.f, dimensions.y / 2.f, dimensions.z / 2.f }, *pDefaultMaterial);
+		const auto pWallObjBottom = new GameObject();
+
+		const auto pWallModelBottom = new ModelComponent(L"Meshes/Cube.ovm");
+		pWallModelBottom->SetMaterial(pWallMaterial1);
+		pWallObjBottom->AddComponent(pWallModelBottom);
+
+		const auto pColisionObjBottom = new GameObject();
+		auto pCubeActorBottom = pColisionObjBottom->AddComponent(new RigidBodyComponent(true));
+		pCubeActorBottom->AddCollider(PxBoxGeometry{ (dimensions.x * scale) / 2.f, (dimensions.y * scale) / 2.f, (dimensions.z * scale) / 2.f }, *pDefaultMaterial);
 		pCubeActorBottom->SetCollisionGroup(CollisionGroup::Group1);
 
-		newCubeBottom->GetTransform()->Translate(static_cast<float>(x) - 1.f, 1.f, -dimensions.z);
-		pLevelBorder->AddChild(newCubeBottom);
+		pWallObjBottom->GetTransform()->Translate(static_cast<float>(x) - 1.f, 1.f, -dimensions.z + 0.5f);
+		pColisionObjBottom->GetTransform()->Translate(static_cast<float>(x * scale) - scale, scale, -dimensions.z * scale);
+		pLevelBorder->AddChild(pWallObjBottom);
+		pLevelBorder->AddChild(pColisionObjBottom);
 
 		// top row
-		CubePrefab* newCubeTop{ new CubePrefab(dimensions, darkGrey) };
-		auto pCubeActorTop = newCubeTop->AddComponent(new RigidBodyComponent(true));
-		pCubeActorTop->AddCollider(PxBoxGeometry{ dimensions.x / 2.f, dimensions.y / 2.f, dimensions.z / 2.f }, *pDefaultMaterial);
+		const auto pWallObjTop = new GameObject();
+
+		const auto pWallModelTop = new ModelComponent(L"Meshes/Cube.ovm");
+		pWallModelTop->SetMaterial(pWallMaterial1);
+		pWallObjTop->AddComponent(pWallModelTop);
+
+		const auto pColisionObjTop = new GameObject();
+		auto pCubeActorTop = pColisionObjTop->AddComponent(new RigidBodyComponent(true));
+		pCubeActorTop->AddCollider(PxBoxGeometry{ (dimensions.x * scale) / 2.f, (dimensions.y * scale) / 2.f, (dimensions.z * scale) / 2.f }, *pDefaultMaterial);
 		pCubeActorTop->SetCollisionGroup(CollisionGroup::Group1);
 
-		newCubeTop->GetTransform()->Translate(static_cast<float>(x) - 1.f, 1.f, dimensions.z * m_GridHeight);
-		pLevelBorder->AddChild(newCubeTop);
+		pWallObjTop->GetTransform()->Translate(static_cast<float>(x) - 1.f, 1.f, dimensions.z * m_GridHeight + 0.5f);
+		pColisionObjTop->GetTransform()->Translate(static_cast<float>(x * scale) - scale, scale, +dimensions.z * m_GridHeight * scale);
+		pLevelBorder->AddChild(pWallObjTop);
+		pLevelBorder->AddChild(pColisionObjTop);
 	}
 	for (int y = 0; y < borderHeight; y++)
 	{
 		// bottom row
-		CubePrefab* newCubeBottom{ new CubePrefab(dimensions, darkGrey) };
-		auto pCubeActorBottom = newCubeBottom->AddComponent(new RigidBodyComponent(true));
-		pCubeActorBottom->AddCollider(PxBoxGeometry{ dimensions.x / 2.f, dimensions.y / 2.f, dimensions.z / 2.f }, *pDefaultMaterial);
+		const auto pWallObjBottom = new GameObject();
+
+		const auto pWallModelBottom = new ModelComponent(L"Meshes/Cube.ovm");
+		pWallModelBottom->SetMaterial(pWallMaterial1);
+		pWallObjBottom->AddComponent(pWallModelBottom);
+
+		const auto pColisionObjBottom = new GameObject();
+		auto pCubeActorBottom = pColisionObjBottom->AddComponent(new RigidBodyComponent(true));
+		pCubeActorBottom->AddCollider(PxBoxGeometry{ (dimensions.x * scale) / 2.f, (dimensions.y * scale) / 2.f, (dimensions.z * scale) / 2.f }, *pDefaultMaterial);
 		pCubeActorBottom->SetCollisionGroup(CollisionGroup::Group1);
 
-		newCubeBottom->GetTransform()->Translate(-dimensions.x, 1.f, static_cast<float>(y));
-		pLevelBorder->AddChild(newCubeBottom);
+		pWallObjBottom->GetTransform()->Translate(-dimensions.x, 1.f, static_cast<float>(y) + 0.5f);
+		pColisionObjBottom->GetTransform()->Translate(-dimensions.x * scale, scale, static_cast<float>(y * scale));
+		pLevelBorder->AddChild(pWallObjBottom);
+		pLevelBorder->AddChild(pColisionObjBottom);
 
 		// top row
-		CubePrefab* newCubeTop{ new CubePrefab(dimensions, darkGrey) };
-		auto pCubeActorTop = newCubeTop->AddComponent(new RigidBodyComponent(true));
-		pCubeActorTop->AddCollider(PxBoxGeometry{ dimensions.x / 2.f, dimensions.y / 2.f, dimensions.z / 2.f }, *pDefaultMaterial);
+		const auto pWallObjTop = new GameObject();
+
+		const auto pWallModelTop = new ModelComponent(L"Meshes/Cube.ovm");
+		pWallModelTop->SetMaterial(pWallMaterial1);
+		pWallObjTop->AddComponent(pWallModelTop);
+
+		const auto pColisionObjTop = new GameObject();
+		auto pCubeActorTop = pColisionObjTop->AddComponent(new RigidBodyComponent(true));
+		pCubeActorTop->AddCollider(PxBoxGeometry{ (dimensions.x * scale) / 2.f, (dimensions.y * scale) / 2.f, (dimensions.z * scale) / 2.f }, *pDefaultMaterial);
 		pCubeActorTop->SetCollisionGroup(CollisionGroup::Group1);
 
-		newCubeTop->GetTransform()->Translate(dimensions.x * m_GridWidth, 1.f, static_cast<float>(y));
-		pLevelBorder->AddChild(newCubeTop);
+		pWallObjTop->GetTransform()->Translate(dimensions.x * m_GridWidth, 1.f, static_cast<float>(y) + 0.5f);
+		pColisionObjTop->GetTransform()->Translate(dimensions.x * m_GridWidth * scale, scale, static_cast<float>(y * scale));
+		pLevelBorder->AddChild(pWallObjTop);
+		pLevelBorder->AddChild(pColisionObjTop);
 	}
 	pLevelBorder->GetTransform()->Translate(0.f, 0.f, 0.f);
-	pLevelBorder->GetTransform()->Scale(5.f);
+	pLevelBorder->GetTransform()->Scale(scale);
 	AddChild(pLevelBorder);
 
 	// ****************
@@ -231,7 +304,6 @@ void Bomber::SpawnBomb()
 		int zPos{ static_cast<int>((CharacterPos.z + (scale / 2.f)) / scale) };
 		//std::cout << xPos << ", " << zPos << std::endl;
 		//std::cout << (m_pCharacter->GetTransform()->GetPosition().x + (scale / 2.f)) << ", " << (m_pCharacter->GetTransform()->GetPosition().z + (scale / 2.f)) << std::endl;
-
 
 		newBomb->GetTransform()->Scale(4.f);
 		newBomb->GetTransform()->Rotate(90.f, 90.f, 0.f);
@@ -287,143 +359,142 @@ void Bomber::SpawnParticles(Bomb bomb)
 	particle.object = pObject;
 	m_ActiveParticles.push_back(particle);
 
+
+
 	for (int i = 0; i < bomb.explosionLenght; i++)
 	{
-		for (size_t idx = 0; idx < 4; idx++)
-		{
-			//TimedParticle particleSides{};
-			//GameObject* pObjectSides{ new GameObject };
-			//pObjectSides->AddComponent(new ParticleEmitterComponent(L"BomberMan/FireBall.png", settings, 100));
+		//TimedParticle particleSides{};
+		//GameObject* pObjectSides{ new GameObject };
+		//auto pCubeActorSides = pObjectSides->AddComponent(new RigidBodyComponent(true));
+		//pObjectSides->AddComponent(new ParticleEmitterComponent(L"BomberMan/FireBall.png", settings, 100));
 
-			//auto pCubeActorSides = pObjectSides->AddComponent(new RigidBodyComponent(true));
-			//pCubeActorSides->AddCollider(PxBoxGeometry{ scaleBomb / 2.f, scaleBomb / 2.f, scaleBomb / 2.f }, *pDefaultMaterial, true);
-			//pObjectSides->SetOnTriggerCallBack([=](GameObject*, GameObject*, PxTriggerAction action)
-			//	{
-			//		if (action == PxTriggerAction::ENTER)
-			//		{
-			//			std::cout << "You Died" << std::endl;
-			//			m_KillPlayer = true;
-			//		}
-			//	}
-			//);
+		//pCubeActorSides->AddCollider(PxBoxGeometry{ scaleBomb / 2.f, scaleBomb / 2.f, scaleBomb / 2.f }, *pDefaultMaterial, true);
+		//pObjectSides->SetOnTriggerCallBack([=](GameObject*, GameObject*, PxTriggerAction action)
+		//	{
+		//		if (action == PxTriggerAction::ENTER)
+		//		{
+		//			std::cout << "You Died" << std::endl;
+		//			m_KillPlayer = true;
+		//		}
+		//	}
+		//);
 
-			//switch (idx)
-			//{
-			//case 0:
-			//	// right particle
-			//	pObjectSides->GetTransform()->Translate(posBomb.x + (i * scaleBomb), posBomb.y, posBomb.z);
-			//	break;
-			//case 1:
-			//	// left particle
-			//	pObjectSides->GetTransform()->Translate(posBomb.x - (i * scaleBomb), posBomb.y, posBomb.z);
-			//	break;
-			//case 2:
-			//	// up particle
-			//	pObjectSides->GetTransform()->Translate(posBomb.x, posBomb.y, posBomb.z + (i * scaleBomb));
-			//	break;
-			//case 3:
-			//	// down particle
-			//	pObjectSides->GetTransform()->Translate(posBomb.x, posBomb.y, posBomb.z - (i * scaleBomb));
-			//	break;
-			//default:
-			//	break;
-			//}
-			//AddChild(pObjectSides);
+		//switch (idx)
+		//{
+		//case 0:
+		//	// right particle
+		//	pObjectSides->GetTransform()->Translate(posBomb.x + (i * scaleBomb), posBomb.y, posBomb.z);
+		//	break;
+		//case 1:
+		//	// left particle
+		//	pObjectSides->GetTransform()->Translate(posBomb.x - (i * scaleBomb), posBomb.y, posBomb.z);
+		//	break;
+		//case 2:
+		//	// up particle
+		//	pObjectSides->GetTransform()->Translate(posBomb.x, posBomb.y, posBomb.z + (i * scaleBomb));
+		//	break;
+		//case 3:
+		//	// down particle
+		//	pObjectSides->GetTransform()->Translate(posBomb.x, posBomb.y, posBomb.z - (i * scaleBomb));
+		//	break;
+		//default:
+		//	break;
+		//}
+		//AddChild(pObjectSides);
 
-			//particleSides.object = pObjectSides;
-			//m_ActiveParticles.push_back(particleSides);
+		//particleSides.object = pObjectSides;
+		//m_ActiveParticles.push_back(particleSides);
 
-			// right particle
-			TimedParticle particleRight{};
-			GameObject* pObjectSidesRight{ new GameObject };
-			pObjectSidesRight->AddComponent(new ParticleEmitterComponent(L"BomberMan/FireBall.png", settings, 100));
+		// right particle
+		TimedParticle particleRight{};
+		GameObject* pObjectSidesRight{ new GameObject };
+		pObjectSidesRight->AddComponent(new ParticleEmitterComponent(L"BomberMan/FireBall.png", settings, 100));
 
-			auto pCubeActorRight = pObjectSidesRight->AddComponent(new RigidBodyComponent(true));
-			pCubeActorRight->AddCollider(PxBoxGeometry{ scaleBomb / 2.f, scaleBomb / 2.f, scaleBomb / 2.f }, *pDefaultMaterial, true);
-			pObjectSidesRight->SetOnTriggerCallBack([=](GameObject*, GameObject*, PxTriggerAction action)
+		auto pCubeActorRight = pObjectSidesRight->AddComponent(new RigidBodyComponent(true));
+		pCubeActorRight->AddCollider(PxBoxGeometry{ scaleBomb / 2.f, scaleBomb / 2.f, scaleBomb / 2.f }, *pDefaultMaterial, true);
+		pObjectSidesRight->SetOnTriggerCallBack([=](GameObject*, GameObject*, PxTriggerAction action)
+			{
+				if (action == PxTriggerAction::ENTER)
 				{
-					if (action == PxTriggerAction::ENTER)
-					{
-						std::cout << "You Died" << std::endl;
-						m_KillPlayer = true;
-					}
+					std::cout << "You Died" << std::endl;
+					m_KillPlayer = true;
 				}
-			);
+			}
+		);
 
-			pObjectSidesRight->GetTransform()->Translate(posBomb.x + scaleBomb, posBomb.y, posBomb.z);
-			AddChild(pObjectSidesRight);
+		pObjectSidesRight->GetTransform()->Translate(posBomb.x + (i * scaleBomb), posBomb.y, posBomb.z);
+		AddChild(pObjectSidesRight);
 
-			particleRight.object = pObjectSidesRight;
-			m_ActiveParticles.push_back(particleRight);
+		particleRight.object = pObjectSidesRight;
+		m_ActiveParticles.push_back(particleRight);
 
-			// left particle
-			TimedParticle particleLeft{};
-			GameObject* pObjectSidesLeft{ new GameObject };
-			pObjectSidesLeft->AddComponent(new ParticleEmitterComponent(L"BomberMan/FireBall.png", settings, 100));
+		// left particle
+		TimedParticle particleLeft{};
+		GameObject* pObjectSidesLeft{ new GameObject };
+		pObjectSidesLeft->AddComponent(new ParticleEmitterComponent(L"BomberMan/FireBall.png", settings, 100));
 
-			auto pCubeActorLeft = pObjectSidesLeft->AddComponent(new RigidBodyComponent(true));
-			pCubeActorLeft->AddCollider(PxBoxGeometry{ scaleBomb / 2.f, scaleBomb / 2.f, scaleBomb / 2.f }, *pDefaultMaterial, true);
-			pObjectSidesLeft->SetOnTriggerCallBack([=](GameObject*, GameObject*, PxTriggerAction action)
+		auto pCubeActorLeft = pObjectSidesLeft->AddComponent(new RigidBodyComponent(true));
+		pCubeActorLeft->AddCollider(PxBoxGeometry{ scaleBomb / 2.f, scaleBomb / 2.f, scaleBomb / 2.f }, *pDefaultMaterial, true);
+		pObjectSidesLeft->SetOnTriggerCallBack([=](GameObject*, GameObject*, PxTriggerAction action)
+			{
+				if (action == PxTriggerAction::ENTER)
 				{
-					if (action == PxTriggerAction::ENTER)
-					{
-						std::cout << "You Died" << std::endl;
-						m_KillPlayer = true;
-					}
+					std::cout << "You Died" << std::endl;
+					m_KillPlayer = true;
 				}
-			);
+			}
+		);
 
-			pObjectSidesLeft->GetTransform()->Translate(posBomb.x - scaleBomb, posBomb.y, posBomb.z);
-			AddChild(pObjectSidesLeft);
+		pObjectSidesLeft->GetTransform()->Translate(posBomb.x - (i * scaleBomb), posBomb.y, posBomb.z);
+		AddChild(pObjectSidesLeft);
 
-			particleLeft.object = pObjectSidesLeft;
-			m_ActiveParticles.push_back(particleLeft);
+		particleLeft.object = pObjectSidesLeft;
+		m_ActiveParticles.push_back(particleLeft);
 
-			// up particle
-			TimedParticle particleUp{};
-			GameObject* pObjectSidesUp{ new GameObject };
-			pObjectSidesUp->AddComponent(new ParticleEmitterComponent(L"BomberMan/FireBall.png", settings, 100));
+		// up particle
+		TimedParticle particleUp{};
+		GameObject* pObjectSidesUp{ new GameObject };
+		pObjectSidesUp->AddComponent(new ParticleEmitterComponent(L"BomberMan/FireBall.png", settings, 100));
 
-			auto pCubeActorUp = pObjectSidesUp->AddComponent(new RigidBodyComponent(true));
-			pCubeActorUp->AddCollider(PxBoxGeometry{ scaleBomb / 2.f, scaleBomb / 2.f, scaleBomb / 2.f }, *pDefaultMaterial, true);
-			pObjectSidesUp->SetOnTriggerCallBack([=](GameObject*, GameObject*, PxTriggerAction action)
+		auto pCubeActorUp = pObjectSidesUp->AddComponent(new RigidBodyComponent(true));
+		pCubeActorUp->AddCollider(PxBoxGeometry{ scaleBomb / 2.f, scaleBomb / 2.f, scaleBomb / 2.f }, *pDefaultMaterial, true);
+		pObjectSidesUp->SetOnTriggerCallBack([=](GameObject*, GameObject*, PxTriggerAction action)
+			{
+				if (action == PxTriggerAction::ENTER)
 				{
-					if (action == PxTriggerAction::ENTER)
-					{
-						std::cout << "You Died" << std::endl;
-						m_KillPlayer = true;
-					}
+					std::cout << "You Died" << std::endl;
+					m_KillPlayer = true;
 				}
-			);
+			}
+		);
 
-			pObjectSidesUp->GetTransform()->Translate(posBomb.x, posBomb.y, posBomb.z + scaleBomb);
-			AddChild(pObjectSidesUp);
+		pObjectSidesUp->GetTransform()->Translate(posBomb.x, posBomb.y, posBomb.z + (i * scaleBomb));
+		AddChild(pObjectSidesUp);
 
-			particleUp.object = pObjectSidesUp;
-			m_ActiveParticles.push_back(particleUp);
+		particleUp.object = pObjectSidesUp;
+		m_ActiveParticles.push_back(particleUp);
 
-			// down particle
-			TimedParticle particleDown{};
-			GameObject* pObjectSidesDown{ new GameObject };
-			pObjectSidesDown->AddComponent(new ParticleEmitterComponent(L"BomberMan/FireBall.png", settings, 100));
+		// down particle
+		TimedParticle particleDown{};
+		GameObject* pObjectSidesDown{ new GameObject };
+		pObjectSidesDown->AddComponent(new ParticleEmitterComponent(L"BomberMan/FireBall.png", settings, 100));
 
-			auto pCubeActorDown = pObjectSidesDown->AddComponent(new RigidBodyComponent(true));
-			pCubeActorDown->AddCollider(PxBoxGeometry{ scaleBomb / 2.f, scaleBomb / 2.f, scaleBomb / 2.f }, *pDefaultMaterial, true);
-			pObjectSidesDown->SetOnTriggerCallBack([=](GameObject*, GameObject*, PxTriggerAction action)
+		auto pCubeActorDown = pObjectSidesDown->AddComponent(new RigidBodyComponent(true));
+		pCubeActorDown->AddCollider(PxBoxGeometry{ scaleBomb / 2.f, scaleBomb / 2.f, scaleBomb / 2.f }, *pDefaultMaterial, true);
+		pObjectSidesDown->SetOnTriggerCallBack([=](GameObject*, GameObject*, PxTriggerAction action)
+			{
+				if (action == PxTriggerAction::ENTER)
 				{
-					if (action == PxTriggerAction::ENTER)
-					{
-						std::cout << "You Died" << std::endl;
-						m_KillPlayer = true;
-					}
+					std::cout << "You Died" << std::endl;
+					m_KillPlayer = true;
 				}
-			);
+			}
+		);
 
-			pObjectSidesDown->GetTransform()->Translate(posBomb.x, posBomb.y, posBomb.z - scaleBomb);
-			AddChild(pObjectSidesDown);
+		pObjectSidesDown->GetTransform()->Translate(posBomb.x, posBomb.y, posBomb.z - (i * scaleBomb));
+		AddChild(pObjectSidesDown);
 
-			particleDown.object = pObjectSidesDown;
-			m_ActiveParticles.push_back(particleDown);
-		}
+		particleDown.object = pObjectSidesDown;
+		m_ActiveParticles.push_back(particleDown);
 	}
 }

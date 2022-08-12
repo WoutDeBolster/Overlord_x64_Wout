@@ -85,12 +85,12 @@ void Bomber::InitCharacter()
 
 	m_pCharacter = AddChild(new Character(characterDesc));
 	m_pCharacter->GetTransform()->Translate(0.f, 5.f, 0.f);
-	const auto pModel = new ModelComponent(L"BomberMan/Ch09_nonPBR/Ch09_nonPBR2.ovm");
+	const auto pModel = new ModelComponent(L"BomberMan/Ch09_nonPBR/Running.ovm");
 	m_pCharacter->AddComponent<ModelComponent>(pModel);
 
 	if (const auto pAnimator = pModel->GetAnimator())
 	{
-		pAnimator->SetAnimation(2);
+		pAnimator->SetAnimation(0);
 		pAnimator->Play();
 	}
 
@@ -144,8 +144,6 @@ void Bomber::InitLevel()
 	GameObject* pLevelGrid{ new GameObject{} };
 	bool ColorGreen{ true };
 	XMFLOAT3 dimensions{ 1.f, 1.f, 1.f };
-	XMFLOAT4 forestGreen{ 34.f / 255.f ,139.f / 255.f,34.f / 255.f, 1.f };
-	XMFLOAT4 lightGray{ 211.f / 255.f ,211.f / 255.f ,211.f / 255.f, 1.f };
 	const float scale{ 5.f };
 	for (int y = 0; y < m_GridHeight; y++)
 	{
@@ -159,16 +157,9 @@ void Bomber::InitLevel()
 				pGroundModel->SetMaterial(pGroundMaterial1);
 				pGroundObj->AddComponent(pGroundModel);
 
-				const auto pColisionObj = new GameObject();
-				auto pCubeActor = pColisionObj->AddComponent(new RigidBodyComponent(true));
-				pCubeActor->AddCollider(PxBoxGeometry{ (dimensions.x * scale) / 2.f, (dimensions.y * scale) / 2.f, (dimensions.z * scale) / 2.f }, *pDefaultMaterial);
-				pCubeActor->SetCollisionGroup(CollisionGroup::Group1);
-
-				pColisionObj->GetTransform()->Translate(static_cast<float>(x * scale), 0.f, static_cast<float>(y * scale));
 				pGroundObj->GetTransform()->Translate(static_cast<float>(x * scale), 0.f, static_cast<float>(y * scale) + 2.5f);
 				pGroundObj->GetTransform()->Scale(scale);
 				pLevelGrid->AddChild(pGroundObj);
-				pLevelGrid->AddChild(pColisionObj);
 			}
 			else
 			{
@@ -178,21 +169,22 @@ void Bomber::InitLevel()
 				pGroundModel->SetMaterial(pGroundMaterial2);
 				pGroundObj->AddComponent(pGroundModel);
 
-				const auto pColisionObj = new GameObject();
-				auto pCubeActor = pColisionObj->AddComponent(new RigidBodyComponent(true));
-				pCubeActor->AddCollider(PxBoxGeometry{ (dimensions.x * scale) / 2.f, (dimensions.y * scale) / 2.f, (dimensions.z * scale) / 2.f }, *pDefaultMaterial);
-				pCubeActor->SetCollisionGroup(CollisionGroup::Group1);
-
-				pColisionObj->GetTransform()->Translate(static_cast<float>(x * scale), 0.f, static_cast<float>(y * scale));
 				pGroundObj->GetTransform()->Translate(static_cast<float>(x * scale), 0.f, static_cast<float>(y * scale) + 2.5f);
 				pGroundObj->GetTransform()->Scale(scale);
 				pLevelGrid->AddChild(pGroundObj);
-				pLevelGrid->AddChild(pColisionObj);
 			}
 			ColorGreen = !ColorGreen;
 		}
 		ColorGreen = !ColorGreen;
 	}
+
+	const auto pColisionObj = new GameObject();
+	auto pCubeActor = pColisionObj->AddComponent(new RigidBodyComponent(true));
+	pCubeActor->AddCollider(PxBoxGeometry{ (dimensions.x * scale * m_GridWidth) / 2.f, (dimensions.y * scale) / 2.f, (dimensions.z * scale * m_GridHeight) / 2.f }, *pDefaultMaterial);
+	pCubeActor->SetCollisionGroup(CollisionGroup::Group1);
+	pCubeActor->GetTransform()->Translate((dimensions.x * scale * m_GridWidth - scale) / 2.f, (dimensions.y * scale) / 2.f, (dimensions.z * scale * m_GridHeight - scale) / 2.f);
+
+	pLevelGrid->AddChild(pColisionObj);
 	pLevelGrid->GetTransform()->Translate(0.f, 0.f, 0.f);
 	AddChild(pLevelGrid);
 
@@ -200,7 +192,6 @@ void Bomber::InitLevel()
 	// BORDER
 	// ******
 	GameObject* pLevelBorder{ new GameObject{} };
-	XMFLOAT4 darkGrey{ 169.f / 255.f ,169.f / 255.f,169.f / 255.f, 1.f };
 	int borderWidth{ m_GridWidth + 2 }; // +2 for the corners
 	int borderHeight{ m_GridHeight }; // only one needs +2
 	for (int x = 0; x < borderWidth; x++)
@@ -212,15 +203,8 @@ void Bomber::InitLevel()
 		pWallModelBottom->SetMaterial(pWallMaterial1);
 		pWallObjBottom->AddComponent(pWallModelBottom);
 
-		const auto pColisionObjBottom = new GameObject();
-		auto pCubeActorBottom = pColisionObjBottom->AddComponent(new RigidBodyComponent(true));
-		pCubeActorBottom->AddCollider(PxBoxGeometry{ (dimensions.x * scale) / 2.f, (dimensions.y * scale) / 2.f, (dimensions.z * scale) / 2.f }, *pDefaultMaterial);
-		pCubeActorBottom->SetCollisionGroup(CollisionGroup::Group1);
-
 		pWallObjBottom->GetTransform()->Translate(static_cast<float>(x) - 1.f, 1.f, -dimensions.z + 0.5f);
-		pColisionObjBottom->GetTransform()->Translate(static_cast<float>(x * scale) - scale, scale, -dimensions.z * scale);
 		pLevelBorder->AddChild(pWallObjBottom);
-		pLevelBorder->AddChild(pColisionObjBottom);
 
 		// top row
 		const auto pWallObjTop = new GameObject();
@@ -229,15 +213,8 @@ void Bomber::InitLevel()
 		pWallModelTop->SetMaterial(pWallMaterial1);
 		pWallObjTop->AddComponent(pWallModelTop);
 
-		const auto pColisionObjTop = new GameObject();
-		auto pCubeActorTop = pColisionObjTop->AddComponent(new RigidBodyComponent(true));
-		pCubeActorTop->AddCollider(PxBoxGeometry{ (dimensions.x * scale) / 2.f, (dimensions.y * scale) / 2.f, (dimensions.z * scale) / 2.f }, *pDefaultMaterial);
-		pCubeActorTop->SetCollisionGroup(CollisionGroup::Group1);
-
 		pWallObjTop->GetTransform()->Translate(static_cast<float>(x) - 1.f, 1.f, dimensions.z * m_GridHeight + 0.5f);
-		pColisionObjTop->GetTransform()->Translate(static_cast<float>(x * scale) - scale, scale, +dimensions.z * m_GridHeight * scale);
 		pLevelBorder->AddChild(pWallObjTop);
-		pLevelBorder->AddChild(pColisionObjTop);
 	}
 	for (int y = 0; y < borderHeight; y++)
 	{
@@ -248,33 +225,50 @@ void Bomber::InitLevel()
 		pWallModelBottom->SetMaterial(pWallMaterial1);
 		pWallObjBottom->AddComponent(pWallModelBottom);
 
-		const auto pColisionObjBottom = new GameObject();
-		auto pCubeActorBottom = pColisionObjBottom->AddComponent(new RigidBodyComponent(true));
-		pCubeActorBottom->AddCollider(PxBoxGeometry{ (dimensions.x * scale) / 2.f, (dimensions.y * scale) / 2.f, (dimensions.z * scale) / 2.f }, *pDefaultMaterial);
-		pCubeActorBottom->SetCollisionGroup(CollisionGroup::Group1);
-
 		pWallObjBottom->GetTransform()->Translate(-dimensions.x, 1.f, static_cast<float>(y) + 0.5f);
-		pColisionObjBottom->GetTransform()->Translate(-dimensions.x * scale, scale, static_cast<float>(y * scale));
 		pLevelBorder->AddChild(pWallObjBottom);
-		pLevelBorder->AddChild(pColisionObjBottom);
 
 		// top row
 		const auto pWallObjTop = new GameObject();
 
 		const auto pWallModelTop = new ModelComponent(L"Meshes/Cube.ovm");
 		pWallModelTop->SetMaterial(pWallMaterial1);
-		pWallObjTop->AddComponent(pWallModelTop);
-
-		const auto pColisionObjTop = new GameObject();
-		auto pCubeActorTop = pColisionObjTop->AddComponent(new RigidBodyComponent(true));
-		pCubeActorTop->AddCollider(PxBoxGeometry{ (dimensions.x * scale) / 2.f, (dimensions.y * scale) / 2.f, (dimensions.z * scale) / 2.f }, *pDefaultMaterial);
-		pCubeActorTop->SetCollisionGroup(CollisionGroup::Group1);
+		pWallObjTop->AddComponent(pWallModelTop);;
 
 		pWallObjTop->GetTransform()->Translate(dimensions.x * m_GridWidth, 1.f, static_cast<float>(y) + 0.5f);
-		pColisionObjTop->GetTransform()->Translate(dimensions.x * m_GridWidth * scale, scale, static_cast<float>(y * scale));
 		pLevelBorder->AddChild(pWallObjTop);
-		pLevelBorder->AddChild(pColisionObjTop);
 	}
+
+	const auto pColisionObjBottom = new GameObject();
+	auto pCubeActorBottom = pColisionObjBottom->AddComponent(new RigidBodyComponent(true));
+	pCubeActorBottom->AddCollider(PxBoxGeometry{ (dimensions.x * scale * m_GridWidth) / 2.f, (dimensions.y * scale) / 2.f, (dimensions.z * scale) / 2.f }, *pDefaultMaterial);
+	pCubeActorBottom->SetCollisionGroup(CollisionGroup::Group1);
+	pCubeActorBottom->GetTransform()->Translate((dimensions.x * scale * m_GridWidth - scale) / 2.f, dimensions.y * scale, -dimensions.z * scale);
+
+	const auto pColisionObjTop = new GameObject();
+	auto pCubeActorTop = pColisionObjTop->AddComponent(new RigidBodyComponent(true));
+	pCubeActorTop->AddCollider(PxBoxGeometry{ (dimensions.x * scale * m_GridWidth) / 2.f, (dimensions.y * scale) / 2.f, (dimensions.z * scale) / 2.f }, *pDefaultMaterial);
+	pCubeActorTop->SetCollisionGroup(CollisionGroup::Group1);
+	pCubeActorTop->GetTransform()->Translate((dimensions.x * scale * m_GridWidth - scale) / 2.f, dimensions.y * scale, dimensions.z * scale * m_GridHeight);
+
+	const auto pColisionObjLeft = new GameObject();
+	auto pCubeActorLeft = pColisionObjLeft->AddComponent(new RigidBodyComponent(true));
+	pCubeActorLeft->AddCollider(PxBoxGeometry{ (dimensions.x * scale) / 2.f, (dimensions.y * scale) / 2.f, (dimensions.z * scale * m_GridHeight) / 2.f }, *pDefaultMaterial);
+	pCubeActorLeft->SetCollisionGroup(CollisionGroup::Group1);
+	pCubeActorLeft->GetTransform()->Translate((-dimensions.x * scale - scale) / 2.f, dimensions.y * scale, (dimensions.z * scale * m_GridHeight - scale) / 2.f);
+
+	const auto pColisionObjRight = new GameObject();
+	auto pCubeActorRight = pColisionObjRight->AddComponent(new RigidBodyComponent(true));
+	pCubeActorRight->AddCollider(PxBoxGeometry{ (dimensions.x * scale) / 2.f, (dimensions.y * scale) / 2.f, (dimensions.z * scale * m_GridHeight) / 2.f }, *pDefaultMaterial);
+	pCubeActorRight->SetCollisionGroup(CollisionGroup::Group1);
+	pCubeActorRight->GetTransform()->Translate(dimensions.x * scale * m_GridWidth, dimensions.y * scale, (dimensions.z * scale * m_GridHeight - scale) / 2.f);
+
+	pLevelBorder->AddChild(pColisionObjBottom);
+	pLevelBorder->AddChild(pColisionObjTop);
+	pLevelBorder->AddChild(pColisionObjLeft);
+	pLevelBorder->AddChild(pColisionObjRight);
+
+
 	pLevelBorder->GetTransform()->Translate(0.f, 0.f, 0.f);
 	pLevelBorder->GetTransform()->Scale(scale);
 	AddChild(pLevelBorder);

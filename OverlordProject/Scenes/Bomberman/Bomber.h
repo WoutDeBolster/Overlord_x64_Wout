@@ -34,6 +34,7 @@ private:
 	void InitLevel();
 	void SpawnBomb();
 	void SpawnParticles(Bomb bomb);
+	void SpawnBreakebles();
 
 	Character* m_pCharacter{};
 	enum InputIds
@@ -45,12 +46,15 @@ private:
 		CharacterPlaceBomb
 	};
 	bool m_KillPlayer{ false };
+	bool m_Win{ false };
 
-	int m_GridWidth{ 8 };
-	int m_GridHeight{ 8 };
+	int m_GridWidth{ 7 };
+	int m_GridHeight{ 5 };
 
 	std::vector<Bomb> m_Bombs;
 	std::vector<TimedParticle> m_ActiveParticles;
+	std::vector<GameObject*> m_pBreakebleBlocks;
+	GameObject* m_pfinnish;
 	int m_MaxAmountBombs{ 10 };
 	int m_ExplosionLenght{ 2 };
 };

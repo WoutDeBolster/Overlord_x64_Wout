@@ -30,7 +30,7 @@ void Bomber::Initialize()
 	camEmpty->GetTransform()->Rotate(65.f, 0.f, 0.f);
 	camEmpty->AddComponent(cam);
 	AddChild(camEmpty);
-	SetActiveCamera(cam);
+	//SetActiveCamera(cam);
 
 	//Ground Plane
 	const auto pDefaultMaterial = PxGetPhysics().createMaterial(0.5f, 0.5f, 0.5f);
@@ -38,16 +38,7 @@ void Bomber::Initialize()
 
 	InitCharacter();
 	InitLevel();
-
-	//// sphere 1 (group 1 and group 2)
-	//auto pSphereObj = new SpherePrefab(1.f, 10, XMFLOAT4(Colors::Red));
-	//auto pSphereActor = pSphereObj->AddComponent(new RigidBodyComponent(false));
-	//pSphereActor->AddCollider(PxSphereGeometry{ 1.f }, *pDefaultMaterial);
-	//pSphereActor->SetCollisionGroup(CollisionGroup::Group1);
-
-	//pSphereActor->GetTransform()->Translate(0.f, 40.f, 0.f);
-	//pSphereActor->GetTransform()->Scale(5.f);
-	//AddChild(pSphereObj);
+	SpawnBreakebles();
 }
 
 void Bomber::Update()
@@ -84,6 +75,7 @@ void Bomber::InitCharacter()
 	characterDesc.actionId_Jump = CharacterPlaceBomb;
 
 	m_pCharacter = AddChild(new Character(characterDesc));
+	m_pCharacter->SetTag(L"Player");
 	m_pCharacter->GetTransform()->Translate(0.f, 5.f, 0.f);
 	const auto pModel = new ModelComponent(L"BomberMan/Ch09_nonPBR/Running.ovm");
 	m_pCharacter->AddComponent<ModelComponent>(pModel);
@@ -182,7 +174,7 @@ void Bomber::InitLevel()
 	auto pCubeActor = pColisionObj->AddComponent(new RigidBodyComponent(true));
 	pCubeActor->AddCollider(PxBoxGeometry{ (dimensions.x * scale * m_GridWidth) / 2.f, (dimensions.y * scale) / 2.f, (dimensions.z * scale * m_GridHeight) / 2.f }, *pDefaultMaterial);
 	pCubeActor->SetCollisionGroup(CollisionGroup::Group1);
-	pCubeActor->GetTransform()->Translate((dimensions.x * scale * m_GridWidth - scale) / 2.f, (dimensions.y * scale) / 2.f, (dimensions.z * scale * m_GridHeight - scale) / 2.f);
+	pCubeActor->GetTransform()->Translate((dimensions.x * scale * m_GridWidth - scale) / 2.f, 0.f, (dimensions.z * scale * m_GridHeight - scale) / 2.f);
 
 	pLevelGrid->AddChild(pColisionObj);
 	pLevelGrid->GetTransform()->Translate(0.f, 0.f, 0.f);
@@ -337,15 +329,6 @@ void Bomber::SpawnParticles(Bomb bomb)
 
 	auto pCubeActor = pObject->AddComponent(new RigidBodyComponent(true));
 	pCubeActor->AddCollider(PxBoxGeometry{ scaleBomb / 2.f, scaleBomb / 2.f, scaleBomb / 2.f }, *pDefaultMaterial, true);
-	pObject->SetOnTriggerCallBack([=](GameObject*, GameObject*, PxTriggerAction action)
-		{
-			if (action == PxTriggerAction::ENTER)
-			{
-				std::cout << "You Died" << std::endl;
-				m_KillPlayer = true;
-			}
-		}
-	);
 
 	pObject->GetTransform()->Translate(posBomb);
 	AddChild(pObject);
@@ -406,9 +389,21 @@ void Bomber::SpawnParticles(Bomb bomb)
 
 		auto pCubeActorRight = pObjectSidesRight->AddComponent(new RigidBodyComponent(true));
 		pCubeActorRight->AddCollider(PxBoxGeometry{ scaleBomb / 2.f, scaleBomb / 2.f, scaleBomb / 2.f }, *pDefaultMaterial, true);
-		pObjectSidesRight->SetOnTriggerCallBack([=](GameObject*, GameObject*, PxTriggerAction action)
+		pObjectSidesRight->SetOnTriggerCallBack([=](GameObject*, GameObject* object, PxTriggerAction action)
 			{
-				if (action == PxTriggerAction::ENTER)
+				if (action == PxTriggerAction::ENTER && object->GetTag() == L"break")
+				{
+					for (size_t i = 0; i < m_pBreakebleBlocks.size(); i++)
+					{
+						if (object == m_pBreakebleBlocks[i])
+						{
+							m_pBreakebleBlocks.erase(m_pBreakebleBlocks.begin() + i);
+							m_pBreakebleBlocks.erase(m_pBreakebleBlocks.begin() + i + 1);
+						}
+					}
+					std::cout << "dsalkjdas";
+				}
+				else if (action == PxTriggerAction::ENTER && object->GetTag() == L"Player")
 				{
 					std::cout << "You Died" << std::endl;
 					m_KillPlayer = true;
@@ -429,9 +424,21 @@ void Bomber::SpawnParticles(Bomb bomb)
 
 		auto pCubeActorLeft = pObjectSidesLeft->AddComponent(new RigidBodyComponent(true));
 		pCubeActorLeft->AddCollider(PxBoxGeometry{ scaleBomb / 2.f, scaleBomb / 2.f, scaleBomb / 2.f }, *pDefaultMaterial, true);
-		pObjectSidesLeft->SetOnTriggerCallBack([=](GameObject*, GameObject*, PxTriggerAction action)
+		pObjectSidesLeft->SetOnTriggerCallBack([=](GameObject*, GameObject* object, PxTriggerAction action)
 			{
-				if (action == PxTriggerAction::ENTER)
+				if (action == PxTriggerAction::ENTER && object->GetTag() == L"break")
+				{
+					for (size_t i = 0; i < m_pBreakebleBlocks.size(); i++)
+					{
+						if (object == m_pBreakebleBlocks[i])
+						{
+							m_pBreakebleBlocks.erase(m_pBreakebleBlocks.begin() + i);
+							m_pBreakebleBlocks.erase(m_pBreakebleBlocks.begin() + i + 1);
+						}
+					}
+					std::cout << "dsalkjdas";
+				}
+				else if (action == PxTriggerAction::ENTER && object->GetTag() == L"Player")
 				{
 					std::cout << "You Died" << std::endl;
 					m_KillPlayer = true;
@@ -452,9 +459,21 @@ void Bomber::SpawnParticles(Bomb bomb)
 
 		auto pCubeActorUp = pObjectSidesUp->AddComponent(new RigidBodyComponent(true));
 		pCubeActorUp->AddCollider(PxBoxGeometry{ scaleBomb / 2.f, scaleBomb / 2.f, scaleBomb / 2.f }, *pDefaultMaterial, true);
-		pObjectSidesUp->SetOnTriggerCallBack([=](GameObject*, GameObject*, PxTriggerAction action)
+		pObjectSidesUp->SetOnTriggerCallBack([=](GameObject*, GameObject* object, PxTriggerAction action)
 			{
-				if (action == PxTriggerAction::ENTER)
+				if (action == PxTriggerAction::ENTER && object->GetTag() == L"break")
+				{
+					for (size_t i = 0; i < m_pBreakebleBlocks.size(); i++)
+					{
+						if (object == m_pBreakebleBlocks[i])
+						{
+							m_pBreakebleBlocks.erase(m_pBreakebleBlocks.begin() + i);
+							m_pBreakebleBlocks.erase(m_pBreakebleBlocks.begin() + i + 1);
+						}
+					}
+					std::cout << "dsalkjdas";
+				}
+				else if (action == PxTriggerAction::ENTER && object->GetTag() == L"Player")
 				{
 					std::cout << "You Died" << std::endl;
 					m_KillPlayer = true;
@@ -475,9 +494,21 @@ void Bomber::SpawnParticles(Bomb bomb)
 
 		auto pCubeActorDown = pObjectSidesDown->AddComponent(new RigidBodyComponent(true));
 		pCubeActorDown->AddCollider(PxBoxGeometry{ scaleBomb / 2.f, scaleBomb / 2.f, scaleBomb / 2.f }, *pDefaultMaterial, true);
-		pObjectSidesDown->SetOnTriggerCallBack([=](GameObject*, GameObject*, PxTriggerAction action)
+		pObjectSidesDown->SetOnTriggerCallBack([=](GameObject*, GameObject* object, PxTriggerAction action)
 			{
-				if (action == PxTriggerAction::ENTER)
+				if (object->GetTag() == L"break")
+				{
+					for (size_t i = 0; i < m_pBreakebleBlocks.size(); i++)
+					{
+						if (object == m_pBreakebleBlocks[i])
+						{
+							m_pBreakebleBlocks.erase(m_pBreakebleBlocks.begin() + i);
+							m_pBreakebleBlocks.erase(m_pBreakebleBlocks.begin() + i + 1);
+						}
+					}
+					std::cout << "dsalkjdas";
+				}
+				else if (action == PxTriggerAction::ENTER && object->GetTag() == L"Player")
 				{
 					std::cout << "You Died" << std::endl;
 					m_KillPlayer = true;
@@ -490,5 +521,141 @@ void Bomber::SpawnParticles(Bomb bomb)
 
 		particleDown.object = pObjectSidesDown;
 		m_ActiveParticles.push_back(particleDown);
+	}
+}
+
+void Bomber::SpawnBreakebles()
+{
+	const auto pDefaultMaterial = PxGetPhysics().createMaterial(0.5f, 0.5f, 0.5f);
+	const auto pWallMaterial1 = MaterialManager::Get()->CreateMaterial<DiffuseMaterial_Shadow>();
+	pWallMaterial1->SetDiffuseTexture(L"Textures/brickGrey.jpg");
+	const auto pGroundMaterial1 = MaterialManager::Get()->CreateMaterial<DiffuseMaterial_Shadow>();
+	pGroundMaterial1->SetDiffuseTexture(L"Textures/brickBrown.jpg");
+	const auto pFinishMaterial1 = MaterialManager::Get()->CreateMaterial<DiffuseMaterial>();
+	pFinishMaterial1->SetDiffuseTexture(L"Textures/flag_alb.png");
+
+	float scale{ 5.f };
+	XMFLOAT3 dim{ 1.f, 1.f, 1.f };
+	for (int y = 0; y < m_GridHeight; y++)
+	{
+		for (int x = 0; x < m_GridWidth; x++)
+		{
+			if (y % 2 && y != 0)
+			{
+				if (x % 2)
+				{
+					const auto pGroundObj = new GameObject();
+					const auto pGroundModel = new ModelComponent(L"Meshes/Cube.ovm");
+					pGroundModel->SetMaterial(pWallMaterial1);
+					pGroundObj->AddComponent(pGroundModel);
+
+					pGroundObj->GetTransform()->Translate(static_cast<float>(x * scale), scale, static_cast<float>(y * scale + (scale / 2.f)));
+					pGroundObj->GetTransform()->Scale(scale);
+
+					const auto pColisionObj = new GameObject();
+					auto pCubeActor = pColisionObj->AddComponent(new RigidBodyComponent(true));
+					pCubeActor->AddCollider(PxBoxGeometry{ scale / 2.f,  scale / 2.f,  scale / 2.f }, *pDefaultMaterial);
+					pCubeActor->SetCollisionGroup(CollisionGroup::Group1);
+					pCubeActor->GetTransform()->Translate(static_cast<float>(x * scale), scale, static_cast<float>(y * scale));
+
+					AddChild(pGroundObj);
+					AddChild(pColisionObj);
+				}
+				else
+				{
+					if (y == 1 && x == 0)
+					{
+						// beginning gap
+					}
+					else
+					{
+						const auto pGroundObj = new GameObject();
+						const auto pGroundModel = new ModelComponent(L"Meshes/Cube.ovm");
+						pGroundModel->SetMaterial(pGroundMaterial1);
+						pGroundObj->AddComponent(pGroundModel);
+
+						pGroundObj->GetTransform()->Translate(static_cast<float>(x * scale), scale, static_cast<float>(y * scale + (scale / 2.f)));
+						pGroundObj->GetTransform()->Scale(scale);
+
+						const auto pColisionObj = new GameObject();
+						pColisionObj->SetTag(L"break");
+						auto pCubeActor = pColisionObj->AddComponent(new RigidBodyComponent(true));
+						pCubeActor->AddCollider(PxBoxGeometry{ scale / 2.f,  scale / 2.f,  scale / 2.f }, *pDefaultMaterial);
+						pCubeActor->SetCollisionGroup(CollisionGroup::Group1);
+						pCubeActor->GetTransform()->Translate(static_cast<float>(x * scale), scale, static_cast<float>(y * scale));
+
+						AddChild(pColisionObj);
+						AddChild(pGroundObj);
+
+						m_pBreakebleBlocks.push_back(pColisionObj);
+						m_pBreakebleBlocks.push_back(pGroundObj);
+					}
+				}
+			}
+			else
+			{
+				if (y == (m_GridHeight - 1) && x == (m_GridWidth - 1))
+				{
+					const auto pGroundObj = new GameObject();
+					const auto pGroundModel = new ModelComponent(L"Meshes/Cube.ovm");
+					pGroundModel->SetMaterial(pFinishMaterial1);
+					pGroundObj->AddComponent(pGroundModel);
+
+					pGroundObj->GetTransform()->Translate(static_cast<float>(x * scale), scale, static_cast<float>(y * scale + (scale / 2.f)));
+					pGroundObj->GetTransform()->Scale(scale);
+
+					const auto pColisionObj = new GameObject();
+					auto pCubeActor = pColisionObj->AddComponent(new RigidBodyComponent(true));
+					pCubeActor->AddCollider(PxBoxGeometry{ scale / 2.f,  scale / 2.f,  scale / 2.f }, *pDefaultMaterial, true);
+					pCubeActor->SetCollisionGroup(CollisionGroup::Group1);
+					pCubeActor->GetTransform()->Translate(static_cast<float>(x * scale), scale, static_cast<float>(y * scale));
+					pColisionObj->SetOnTriggerCallBack([=](GameObject*, GameObject* object, PxTriggerAction action)
+						{
+
+							if (action == PxTriggerAction::ENTER && object->GetTag() == L"Player")
+							{
+								std::cout << "You Win" << std::endl;
+								m_Win = true;
+							}
+						}
+					);
+
+					AddChild(pGroundObj);
+					AddChild(pColisionObj);
+					m_pfinnish = pColisionObj;
+				}
+				else if (y == 0 && x == 0)
+				{
+					// beginning gap
+				}
+				else if (y == 0 && x == 1)
+				{
+					// beginning gap
+				}
+				else
+				{
+					const auto pGroundObj = new GameObject();
+					const auto pGroundModel = new ModelComponent(L"Meshes/Cube.ovm");
+					pGroundModel->SetMaterial(pGroundMaterial1);
+					pGroundObj->AddComponent(pGroundModel);
+
+					pGroundObj->GetTransform()->Translate(static_cast<float>(x * scale), scale, static_cast<float>(y * scale + (scale / 2.f)));
+					pGroundObj->GetTransform()->Scale(scale);
+
+					const auto pColisionObj = new GameObject();
+					pColisionObj->SetTag(L"break");
+					auto pCubeActor = pColisionObj->AddComponent(new RigidBodyComponent(true));
+					pCubeActor->AddCollider(PxBoxGeometry{ scale / 2.f,  scale / 2.f,  scale / 2.f }, *pDefaultMaterial);
+					pCubeActor->SetCollisionGroup(CollisionGroup::Group1);
+					pCubeActor->GetTransform()->Translate(static_cast<float>(x * scale), scale, static_cast<float>(y * scale));
+
+					AddChild(pColisionObj);
+					AddChild(pGroundObj);
+
+					m_pBreakebleBlocks.push_back(pColisionObj);
+					m_pBreakebleBlocks.push_back(pGroundObj);
+				}
+			}
+		}
 	}
 }

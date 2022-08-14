@@ -1,5 +1,6 @@
 #pragma once
 class Character;
+class PostGrayscale;
 
 struct Bomb
 {
@@ -12,6 +13,12 @@ struct TimedParticle
 {
 	float countDown{ 1.f };
 	GameObject* object{ nullptr };
+};
+
+struct Breakeble
+{
+	GameObject* model{ nullptr };
+	GameObject* collision{ nullptr };
 };
 
 class Bomber : public GameScene
@@ -28,13 +35,16 @@ public:
 protected:
 	void Initialize() override;
 	void Update() override;
+	void OnGUI() override;
 
 private:
 	void InitCharacter();
 	void InitLevel();
+	void InitSound();
 	void SpawnBomb();
 	void SpawnParticles(Bomb bomb);
 	void SpawnBreakebles();
+	void SpawnRaycasts(XMFLOAT3 posBomb);
 
 	Character* m_pCharacter{};
 	enum InputIds
@@ -53,9 +63,28 @@ private:
 
 	std::vector<Bomb> m_Bombs;
 	std::vector<TimedParticle> m_ActiveParticles;
-	std::vector<GameObject*> m_pBreakebleBlocks;
+	std::vector<Breakeble> m_pBreakebleBlocks;
 	GameObject* m_pfinnish;
 	int m_MaxAmountBombs{ 10 };
 	int m_ExplosionLenght{ 2 };
+
+	// text
+	SpriteFont* m_pFont{};
+
+	std::string m_Text{ "YOU DIED" };
+	std::string m_TextBombsPlaced{};
+	std::string m_GameTimer{};
+	XMFLOAT2 m_TextPosition{};
+	XMFLOAT4 m_TextColor{ 1.f,0.f,0.f,1.f };
+
+	//sound
+	FMOD::Channel* m_pSound2D{};
+	float m_Volume{ 1.f };
+
+	FMOD::Sound* m_pSoundFx{};
+	FMOD::ChannelGroup* m_pSoundEffectGroup{};
+
+	// post
+	PostGrayscale* m_pPostGrayscale{};
 };
 

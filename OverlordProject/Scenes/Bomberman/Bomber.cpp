@@ -11,6 +11,9 @@
 #include "Materials/Shadow/DiffuseMaterial_Shadow.h"
 #include "Materials/Shadow/DiffuseMaterial_Shadow_Skinned.h"
 
+#include "Materials/Post/PostGrayscale.h"
+#include "Materials/Post/PostBlur.h"
+
 Bomber::Bomber()
 	: GameScene(L"BomberScene")
 {
@@ -21,6 +24,9 @@ void Bomber::Initialize()
 	m_SceneContext.settings.enableOnGUI = true;
 	m_SceneContext.settings.drawGrid = false;
 
+	m_pFont = ContentManager::Load<SpriteFont>(L"SpriteFonts/Consolas_32.fnt");
+	m_TextPosition = { m_SceneContext.windowWidth / 2.f - 15.f, m_SceneContext.windowHeight / 2.f };
+
 	m_SceneContext.pLights->SetDirectionalLight({ -95.6139526f,66.1346436f,-41.1850471f }, { 0.740129888f, -0.597205281f, 0.309117377f });
 
 	// cam top down
@@ -30,14 +36,21 @@ void Bomber::Initialize()
 	camEmpty->GetTransform()->Rotate(65.f, 0.f, 0.f);
 	camEmpty->AddComponent(cam);
 	AddChild(camEmpty);
-	//SetActiveCamera(cam);
+	SetActiveCamera(cam);
 
 	//Ground Plane
 	const auto pDefaultMaterial = PxGetPhysics().createMaterial(0.5f, 0.5f, 0.5f);
 	GameSceneExt::CreatePhysXGroundPlane(*this, pDefaultMaterial);
 
+	////Post Processing Stack
+	////=====================
+	//	m_pPostGrayscale = MaterialManager::Get()->CreateMaterial<PostGrayscale>();
+	//
+	//	AddPostProcessingEffect(m_pPostGrayscale);
+
 	InitCharacter();
 	InitLevel();
+	InitSound();
 	SpawnBreakebles();
 }
 
@@ -50,16 +63,65 @@ void Bomber::Update()
 		SpawnBomb();
 	}
 
+	// kill bomb
 	for (size_t i = 0; i < m_Bombs.size(); i++)
 	{
 		m_Bombs[i].countDown -= elapsed;
 		if (m_Bombs[i].countDown <= 0.f)
 		{
+			SpawnRaycasts(m_Bombs[i].object->GetTransform()->GetPosition());
 			SpawnParticles(m_Bombs[i]);
-			RemoveChild(m_Bombs[i].object, true);
+			RemoveChild(m_Bombs[i].object);
 			m_Bombs.erase(m_Bombs.begin() + i);
+			SoundManager::Get()->GetSystem()->playSound(m_pSoundFx, m_pSoundEffectGroup, false, nullptr);
 		}
 	}
+	m_TextBombsPlaced = "Bombs currently placed: " + std::to_string(m_Bombs.size());
+
+	// kill particles
+	for (size_t i = 0; i < m_ActiveParticles.size(); i++)
+	{
+		m_ActiveParticles[i].countDown -= elapsed;
+		if (m_ActiveParticles[i].countDown <= 0.f)
+		{
+			RemoveChild(m_ActiveParticles[i].object);
+			m_ActiveParticles.erase(m_ActiveParticles.begin() + i);
+		}
+	}
+
+	if (m_KillPlayer)
+	{
+		TextRenderer::Get()->DrawText(m_pFont, StringUtil::utf8_decode(m_Text), m_TextPosition, m_TextColor);
+	}
+
+	TextRenderer::Get()->DrawText(m_pFont, StringUtil::utf8_decode(m_TextBombsPlaced), { 0.f, m_SceneContext.windowHeight - 30.f }, { 0.f ,0.f, 0.f, 1.f });
+
+	// SOUND
+	if (InputManager::IsKeyboardKey(InputState::pressed, VK_UP))
+	{
+		m_Volume += 0.1f;
+		if (m_Volume > 1.f)
+		{
+			m_Volume = 1.f;
+		}
+
+		m_pSound2D->setVolume(m_Volume);
+	}
+
+	if (InputManager::IsKeyboardKey(InputState::pressed, VK_DOWN))
+	{
+		m_Volume -= 0.1f;
+		if (m_Volume < 0.f)
+		{
+			m_Volume = 0.f;
+		}
+
+		m_pSound2D->setVolume(m_Volume);
+	}
+}
+
+void Bomber::OnGUI()
+{
 }
 
 void Bomber::InitCharacter()
@@ -114,11 +176,11 @@ void Bomber::InitLevel()
 {
 	const auto pDefaultMaterial = PxGetPhysics().createMaterial(0.5f, 0.5f, 0.5f);
 	const auto pGroundMaterial1 = MaterialManager::Get()->CreateMaterial<DiffuseMaterial_Shadow>();
-	pGroundMaterial1->SetDiffuseTexture(L"Textures/ironGreen.jpg");
+	pGroundMaterial1->SetDiffuseTexture(L"BomberMan/Textures/ironGreen.jpg");
 	const auto pGroundMaterial2 = MaterialManager::Get()->CreateMaterial<DiffuseMaterial_Shadow>();
-	pGroundMaterial2->SetDiffuseTexture(L"Textures/ironGrey.jpg");
+	pGroundMaterial2->SetDiffuseTexture(L"BomberMan/Textures/ironGrey.jpg");
 	const auto pWallMaterial1 = MaterialManager::Get()->CreateMaterial<DiffuseMaterial_Shadow>();
-	pWallMaterial1->SetDiffuseTexture(L"Textures/brickGrey.jpg");
+	pWallMaterial1->SetDiffuseTexture(L"BomberMan/Textures/brickGrey.jpg");
 
 	////Simple Level
 	//const auto pLevelObject = AddChild(new GameObject());
@@ -271,10 +333,35 @@ void Bomber::InitLevel()
 
 }
 
+void Bomber::InitSound()
+{
+	//2D SOUND
+	//========
+	auto pFmodSystem = SoundManager::Get()->GetSystem();
+
+	FMOD::Sound* pSound;
+	auto fmodResult = pFmodSystem->createStream("Resources/BomberMan/Music/themeSong.mp3", FMOD_DEFAULT, nullptr, &pSound);
+
+	pSound->setMode(FMOD_LOOP_NORMAL);
+
+	m_pSound2D->setVolume(m_Volume);
+	fmodResult = pFmodSystem->playSound(pSound, nullptr, false, &m_pSound2D);
+
+	//Sound Effect
+	fmodResult = pFmodSystem->createChannelGroup("Sound Effects", &m_pSoundEffectGroup);
+	m_pSoundEffectGroup->setVolume(0.5f);
+	fmodResult = pFmodSystem->createStream("Resources/BomberMan/Music/explosion-02.mp3", FMOD_DEFAULT, nullptr, &m_pSoundFx);
+}
+
 void Bomber::SpawnBomb()
 {
 	if (m_MaxAmountBombs >= m_Bombs.size())
 	{
+		const float scale{ 5.f };
+		XMFLOAT3 CharacterPos{ m_pCharacter->GetTransform()->GetPosition() };
+		int xPos{ static_cast<int>((CharacterPos.x + (scale / 2.f)) / scale) };
+		int zPos{ static_cast<int>((CharacterPos.z + (scale / 2.f)) / scale) };
+
 		GameObject* newBomb{ new GameObject };
 		newBomb->AddComponent<ModelComponent>(new ModelComponent(L"BomberMan/Bombs/Bomb/model_ob001_bomb.ovm"));
 
@@ -283,17 +370,10 @@ void Bomber::SpawnBomb()
 		newBomb->GetComponent<ModelComponent>()->SetMaterial(pBombMat);
 
 		// snap on grid
-
-		const float scale{ 5.f };
-		XMFLOAT3 CharacterPos{ m_pCharacter->GetTransform()->GetPosition() };
-		int xPos{ static_cast<int>((CharacterPos.x + (scale / 2.f)) / scale) };
-		int zPos{ static_cast<int>((CharacterPos.z + (scale / 2.f)) / scale) };
-		//std::cout << xPos << ", " << zPos << std::endl;
-		//std::cout << (m_pCharacter->GetTransform()->GetPosition().x + (scale / 2.f)) << ", " << (m_pCharacter->GetTransform()->GetPosition().z + (scale / 2.f)) << std::endl;
-
 		newBomb->GetTransform()->Scale(4.f);
 		newBomb->GetTransform()->Rotate(90.f, 90.f, 0.f);
 		newBomb->GetTransform()->Translate(scale * xPos, scale / 2.f, scale * zPos);
+
 		AddChild(newBomb);
 
 		Bomb newBombComplete{};
@@ -307,7 +387,7 @@ void Bomber::SpawnParticles(Bomb bomb)
 {
 	const auto pDefaultMaterial = PxGetPhysics().createMaterial(0.5f, 0.5f, 0.5f);
 	XMFLOAT3 posBomb{ bomb.object->GetTransform()->GetPosition() };
-	float scaleBomb{ bomb.object->GetTransform()->GetScale().x };
+	float scaleBomb{ 5.f };
 
 	//Particle System
 	ParticleEmitterSettings settings{};
@@ -325,10 +405,19 @@ void Bomber::SpawnParticles(Bomb bomb)
 	// middle particle
 	TimedParticle particle{};
 	GameObject* pObject{ new GameObject };
-	pObject->AddComponent(new ParticleEmitterComponent(L"BomberMan/FireBall.png", settings, 100));
+	pObject->AddComponent(new ParticleEmitterComponent(L"BomberMan/Textures/FireBall.png", settings, 100));
 
 	auto pCubeActor = pObject->AddComponent(new RigidBodyComponent(true));
 	pCubeActor->AddCollider(PxBoxGeometry{ scaleBomb / 2.f, scaleBomb / 2.f, scaleBomb / 2.f }, *pDefaultMaterial, true);
+	pObject->SetOnTriggerCallBack([=](GameObject*, GameObject* object, PxTriggerAction action)
+		{
+			if (action == PxTriggerAction::ENTER && object->GetTag() == L"Player")
+			{
+				std::cout << "You Died" << std::endl;
+				m_KillPlayer = true;
+			}
+		}
+	);
 
 	pObject->GetTransform()->Translate(posBomb);
 	AddChild(pObject);
@@ -340,70 +429,16 @@ void Bomber::SpawnParticles(Bomb bomb)
 
 	for (int i = 0; i < bomb.explosionLenght; i++)
 	{
-		//TimedParticle particleSides{};
-		//GameObject* pObjectSides{ new GameObject };
-		//auto pCubeActorSides = pObjectSides->AddComponent(new RigidBodyComponent(true));
-		//pObjectSides->AddComponent(new ParticleEmitterComponent(L"BomberMan/FireBall.png", settings, 100));
-
-		//pCubeActorSides->AddCollider(PxBoxGeometry{ scaleBomb / 2.f, scaleBomb / 2.f, scaleBomb / 2.f }, *pDefaultMaterial, true);
-		//pObjectSides->SetOnTriggerCallBack([=](GameObject*, GameObject*, PxTriggerAction action)
-		//	{
-		//		if (action == PxTriggerAction::ENTER)
-		//		{
-		//			std::cout << "You Died" << std::endl;
-		//			m_KillPlayer = true;
-		//		}
-		//	}
-		//);
-
-		//switch (idx)
-		//{
-		//case 0:
-		//	// right particle
-		//	pObjectSides->GetTransform()->Translate(posBomb.x + (i * scaleBomb), posBomb.y, posBomb.z);
-		//	break;
-		//case 1:
-		//	// left particle
-		//	pObjectSides->GetTransform()->Translate(posBomb.x - (i * scaleBomb), posBomb.y, posBomb.z);
-		//	break;
-		//case 2:
-		//	// up particle
-		//	pObjectSides->GetTransform()->Translate(posBomb.x, posBomb.y, posBomb.z + (i * scaleBomb));
-		//	break;
-		//case 3:
-		//	// down particle
-		//	pObjectSides->GetTransform()->Translate(posBomb.x, posBomb.y, posBomb.z - (i * scaleBomb));
-		//	break;
-		//default:
-		//	break;
-		//}
-		//AddChild(pObjectSides);
-
-		//particleSides.object = pObjectSides;
-		//m_ActiveParticles.push_back(particleSides);
-
 		// right particle
 		TimedParticle particleRight{};
 		GameObject* pObjectSidesRight{ new GameObject };
-		pObjectSidesRight->AddComponent(new ParticleEmitterComponent(L"BomberMan/FireBall.png", settings, 100));
+		pObjectSidesRight->AddComponent(new ParticleEmitterComponent(L"BomberMan/Textures/FireBall.png", settings, 100));
 
 		auto pCubeActorRight = pObjectSidesRight->AddComponent(new RigidBodyComponent(true));
 		pCubeActorRight->AddCollider(PxBoxGeometry{ scaleBomb / 2.f, scaleBomb / 2.f, scaleBomb / 2.f }, *pDefaultMaterial, true);
 		pObjectSidesRight->SetOnTriggerCallBack([=](GameObject*, GameObject* object, PxTriggerAction action)
 			{
-				if (action == PxTriggerAction::ENTER && object->GetTag() == L"break")
-				{
-					for (size_t i = 0; i < m_pBreakebleBlocks.size(); i++)
-					{
-						if (object == m_pBreakebleBlocks[i])
-						{
-							m_pBreakebleBlocks.erase(m_pBreakebleBlocks.begin() + i);
-							m_pBreakebleBlocks.erase(m_pBreakebleBlocks.begin() + i + 1);
-						}
-					}
-					std::cout << "dsalkjdas";
-				}
-				else if (action == PxTriggerAction::ENTER && object->GetTag() == L"Player")
+				if (action == PxTriggerAction::ENTER && object->GetTag() == L"Player")
 				{
 					std::cout << "You Died" << std::endl;
 					m_KillPlayer = true;
@@ -420,25 +455,13 @@ void Bomber::SpawnParticles(Bomb bomb)
 		// left particle
 		TimedParticle particleLeft{};
 		GameObject* pObjectSidesLeft{ new GameObject };
-		pObjectSidesLeft->AddComponent(new ParticleEmitterComponent(L"BomberMan/FireBall.png", settings, 100));
+		pObjectSidesLeft->AddComponent(new ParticleEmitterComponent(L"BomberMan/Textures/FireBall.png", settings, 100));
 
 		auto pCubeActorLeft = pObjectSidesLeft->AddComponent(new RigidBodyComponent(true));
 		pCubeActorLeft->AddCollider(PxBoxGeometry{ scaleBomb / 2.f, scaleBomb / 2.f, scaleBomb / 2.f }, *pDefaultMaterial, true);
 		pObjectSidesLeft->SetOnTriggerCallBack([=](GameObject*, GameObject* object, PxTriggerAction action)
 			{
-				if (action == PxTriggerAction::ENTER && object->GetTag() == L"break")
-				{
-					for (size_t i = 0; i < m_pBreakebleBlocks.size(); i++)
-					{
-						if (object == m_pBreakebleBlocks[i])
-						{
-							m_pBreakebleBlocks.erase(m_pBreakebleBlocks.begin() + i);
-							m_pBreakebleBlocks.erase(m_pBreakebleBlocks.begin() + i + 1);
-						}
-					}
-					std::cout << "dsalkjdas";
-				}
-				else if (action == PxTriggerAction::ENTER && object->GetTag() == L"Player")
+				if (action == PxTriggerAction::ENTER && object->GetTag() == L"Player")
 				{
 					std::cout << "You Died" << std::endl;
 					m_KillPlayer = true;
@@ -455,25 +478,13 @@ void Bomber::SpawnParticles(Bomb bomb)
 		// up particle
 		TimedParticle particleUp{};
 		GameObject* pObjectSidesUp{ new GameObject };
-		pObjectSidesUp->AddComponent(new ParticleEmitterComponent(L"BomberMan/FireBall.png", settings, 100));
+		pObjectSidesUp->AddComponent(new ParticleEmitterComponent(L"BomberMan/Textures/FireBall.png", settings, 100));
 
 		auto pCubeActorUp = pObjectSidesUp->AddComponent(new RigidBodyComponent(true));
 		pCubeActorUp->AddCollider(PxBoxGeometry{ scaleBomb / 2.f, scaleBomb / 2.f, scaleBomb / 2.f }, *pDefaultMaterial, true);
 		pObjectSidesUp->SetOnTriggerCallBack([=](GameObject*, GameObject* object, PxTriggerAction action)
 			{
-				if (action == PxTriggerAction::ENTER && object->GetTag() == L"break")
-				{
-					for (size_t i = 0; i < m_pBreakebleBlocks.size(); i++)
-					{
-						if (object == m_pBreakebleBlocks[i])
-						{
-							m_pBreakebleBlocks.erase(m_pBreakebleBlocks.begin() + i);
-							m_pBreakebleBlocks.erase(m_pBreakebleBlocks.begin() + i + 1);
-						}
-					}
-					std::cout << "dsalkjdas";
-				}
-				else if (action == PxTriggerAction::ENTER && object->GetTag() == L"Player")
+				if (action == PxTriggerAction::ENTER && object->GetTag() == L"Player")
 				{
 					std::cout << "You Died" << std::endl;
 					m_KillPlayer = true;
@@ -490,25 +501,13 @@ void Bomber::SpawnParticles(Bomb bomb)
 		// down particle
 		TimedParticle particleDown{};
 		GameObject* pObjectSidesDown{ new GameObject };
-		pObjectSidesDown->AddComponent(new ParticleEmitterComponent(L"BomberMan/FireBall.png", settings, 100));
+		pObjectSidesDown->AddComponent(new ParticleEmitterComponent(L"BomberMan/Textures/FireBall.png", settings, 100));
 
 		auto pCubeActorDown = pObjectSidesDown->AddComponent(new RigidBodyComponent(true));
 		pCubeActorDown->AddCollider(PxBoxGeometry{ scaleBomb / 2.f, scaleBomb / 2.f, scaleBomb / 2.f }, *pDefaultMaterial, true);
 		pObjectSidesDown->SetOnTriggerCallBack([=](GameObject*, GameObject* object, PxTriggerAction action)
 			{
-				if (object->GetTag() == L"break")
-				{
-					for (size_t i = 0; i < m_pBreakebleBlocks.size(); i++)
-					{
-						if (object == m_pBreakebleBlocks[i])
-						{
-							m_pBreakebleBlocks.erase(m_pBreakebleBlocks.begin() + i);
-							m_pBreakebleBlocks.erase(m_pBreakebleBlocks.begin() + i + 1);
-						}
-					}
-					std::cout << "dsalkjdas";
-				}
-				else if (action == PxTriggerAction::ENTER && object->GetTag() == L"Player")
+				if (action == PxTriggerAction::ENTER && object->GetTag() == L"Player")
 				{
 					std::cout << "You Died" << std::endl;
 					m_KillPlayer = true;
@@ -528,11 +527,11 @@ void Bomber::SpawnBreakebles()
 {
 	const auto pDefaultMaterial = PxGetPhysics().createMaterial(0.5f, 0.5f, 0.5f);
 	const auto pWallMaterial1 = MaterialManager::Get()->CreateMaterial<DiffuseMaterial_Shadow>();
-	pWallMaterial1->SetDiffuseTexture(L"Textures/brickGrey.jpg");
+	pWallMaterial1->SetDiffuseTexture(L"BomberMan/Textures/brickGrey.jpg");
 	const auto pGroundMaterial1 = MaterialManager::Get()->CreateMaterial<DiffuseMaterial_Shadow>();
-	pGroundMaterial1->SetDiffuseTexture(L"Textures/brickBrown.jpg");
+	pGroundMaterial1->SetDiffuseTexture(L"BomberMan/Textures/brickBrown.jpg");
 	const auto pFinishMaterial1 = MaterialManager::Get()->CreateMaterial<DiffuseMaterial>();
-	pFinishMaterial1->SetDiffuseTexture(L"Textures/flag_alb.png");
+	pFinishMaterial1->SetDiffuseTexture(L"BomberMan/Textures/flag_alb.png");
 
 	float scale{ 5.f };
 	XMFLOAT3 dim{ 1.f, 1.f, 1.f };
@@ -587,8 +586,7 @@ void Bomber::SpawnBreakebles()
 						AddChild(pColisionObj);
 						AddChild(pGroundObj);
 
-						m_pBreakebleBlocks.push_back(pColisionObj);
-						m_pBreakebleBlocks.push_back(pGroundObj);
+						m_pBreakebleBlocks.push_back(Breakeble{ pGroundObj,pColisionObj });
 					}
 				}
 			}
@@ -652,8 +650,91 @@ void Bomber::SpawnBreakebles()
 					AddChild(pColisionObj);
 					AddChild(pGroundObj);
 
-					m_pBreakebleBlocks.push_back(pColisionObj);
-					m_pBreakebleBlocks.push_back(pGroundObj);
+					m_pBreakebleBlocks.push_back(Breakeble{ pGroundObj,pColisionObj });
+				}
+			}
+		}
+	}
+}
+
+void Bomber::SpawnRaycasts(XMFLOAT3 posBomb)
+{
+	const float scale{ 5.f };
+
+	// up
+	PxRaycastBuffer hitUp{};
+	PxVec3 raydirectionUp{ 0.f, 0.f, 1.f };
+	raydirectionUp.normalize();
+	if (this->GetPhysxProxy()->Raycast({ posBomb.x, scale, posBomb.z }, raydirectionUp, scale, hitUp, PxHitFlag::eDEFAULT, PxQueryFilterData{}))
+	{
+		GameObject* pHitObj = reinterpret_cast<BaseComponent*>(hitUp.block.actor->userData)->GetGameObject();
+		for (size_t i = 0; i < m_pBreakebleBlocks.size(); i++)
+		{
+			if (pHitObj == m_pBreakebleBlocks[i].collision)
+			{
+				RemoveChild(m_pBreakebleBlocks[i].model);
+				RemoveChild(m_pBreakebleBlocks[i].collision);
+				m_pBreakebleBlocks.erase(m_pBreakebleBlocks.begin() + i);
+				//std::cout << "Up";
+			}
+		}
+	}
+
+	// down
+	PxRaycastBuffer hitDown{};
+	PxVec3 raydirectionDown{ 0.f, 0.f, -1.f };
+	raydirectionDown.normalize();
+	if (this->GetPhysxProxy()->Raycast({ posBomb.x, scale, posBomb.z }, raydirectionDown, scale, hitDown, PxHitFlag::eDEFAULT, PxQueryFilterData{}))
+	{
+		GameObject* pHitObj = reinterpret_cast<BaseComponent*>(hitDown.block.actor->userData)->GetGameObject();
+		for (size_t i = 0; i < m_pBreakebleBlocks.size(); i++)
+		{
+			if (pHitObj == m_pBreakebleBlocks[i].collision)
+			{
+				RemoveChild(m_pBreakebleBlocks[i].model);
+				RemoveChild(m_pBreakebleBlocks[i].collision);
+				m_pBreakebleBlocks.erase(m_pBreakebleBlocks.begin() + i);
+				//std::cout << "Down";
+			}
+		}
+	}
+
+	// right
+	PxRaycastBuffer hitRight{};
+	PxVec3 raydirectionRight{ 1.f, 0.f, 0.f };
+	raydirectionRight.normalize();
+	if (this->GetPhysxProxy()->Raycast({ posBomb.x, scale, posBomb.z }, raydirectionRight, scale, hitRight, PxHitFlag::eDEFAULT, PxQueryFilterData{}))
+	{
+		GameObject* pHitObj = reinterpret_cast<BaseComponent*>(hitRight.block.actor->userData)->GetGameObject();
+		for (size_t i = 0; i < m_pBreakebleBlocks.size(); i++)
+		{
+			if (pHitObj == m_pBreakebleBlocks[i].collision)
+			{
+				RemoveChild(m_pBreakebleBlocks[i].model);
+				RemoveChild(m_pBreakebleBlocks[i].collision);
+				m_pBreakebleBlocks.erase(m_pBreakebleBlocks.begin() + i);
+				//std::cout << "Right";
+			}
+		}
+	}
+
+	// left
+	PxRaycastBuffer hitLeft{};
+	PxVec3 raydirectionLeft{ -1.f, 0.f, 0.f };
+	raydirectionLeft.normalize();
+	if (this->GetPhysxProxy()->Raycast({ posBomb.x, scale, posBomb.z }, raydirectionLeft, scale, hitLeft, PxHitFlag::eDEFAULT, PxQueryFilterData{}))
+	{
+		if (hitRight.block.actor != nullptr)
+		{
+			GameObject* pHitObj = reinterpret_cast<BaseComponent*>(hitRight.block.actor->userData)->GetGameObject();
+			for (size_t i = 0; i < m_pBreakebleBlocks.size(); i++)
+			{
+				if (pHitObj == m_pBreakebleBlocks[i].collision)
+				{
+					RemoveChild(m_pBreakebleBlocks[i].model);
+					RemoveChild(m_pBreakebleBlocks[i].collision);
+					m_pBreakebleBlocks.erase(m_pBreakebleBlocks.begin() + i);
+					//std::cout << "Left";
 				}
 			}
 		}

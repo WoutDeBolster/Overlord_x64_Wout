@@ -29,18 +29,29 @@ void Bomber::Initialize()
 
 	m_SceneContext.pLights->SetDirectionalLight({ -95.6139526f,66.1346436f,-41.1850471f }, { 0.740129888f, -0.597205281f, 0.309117377f });
 
-	// cam top down
+	// cam half top down
 	auto camEmpty = new GameObject();
-	auto cam = new CameraComponent();
-	camEmpty->GetTransform()->Translate(15.f, 80.f, -20.f);
+	m_pMainCam = new CameraComponent();
+	camEmpty->GetTransform()->Translate(15.f, 50.f, -15.f);
 	camEmpty->GetTransform()->Rotate(65.f, 0.f, 0.f);
-	camEmpty->AddComponent(cam);
+	camEmpty->AddComponent(m_pMainCam);
 	AddChild(camEmpty);
-	SetActiveCamera(cam);
+	SetActiveCamera(m_pMainCam);
 
 	//Ground Plane
 	const auto pDefaultMaterial = PxGetPhysics().createMaterial(0.5f, 0.5f, 0.5f);
 	GameSceneExt::CreatePhysXGroundPlane(*this, pDefaultMaterial);
+
+	const auto pGroundMaterial1 = MaterialManager::Get()->CreateMaterial<DiffuseMaterial_Shadow>();
+	pGroundMaterial1->SetDiffuseTexture(L"BomberMan/Textures/GroundBrick.jpg");
+
+	const auto pGroundObj = new GameObject();
+	const auto pGroundModel = new ModelComponent(L"Meshes/Cube.ovm");
+	pGroundModel->SetMaterial(pGroundMaterial1);
+	pGroundObj->AddComponent(pGroundModel);
+	pGroundObj->GetTransform()->Scale(150.f, 150.f, 150.f);
+	pGroundObj->GetTransform()->Translate(20.f, -75.f, 100.f);
+	AddChild(pGroundObj);
 
 	////Post Processing Stack
 	////=====================
@@ -48,75 +59,222 @@ void Bomber::Initialize()
 	//
 	//	AddPostProcessingEffect(m_pPostGrayscale);
 
+	m_pPostBlur = MaterialManager::Get()->CreateMaterial<PostBlur>();
+
 	InitCharacter();
 	InitLevel();
 	InitSound();
 	SpawnBreakebles();
+	MainMenu();
 }
 
 void Bomber::Update()
 {
 	const float elapsed{ m_SceneContext.pGameTime->GetElapsed() };
 
-	if (m_SceneContext.pInput->IsActionTriggered(CharacterPlaceBomb))
+	if (m_MenuOn == false)
 	{
-		SpawnBomb();
-	}
-
-	// kill bomb
-	for (size_t i = 0; i < m_Bombs.size(); i++)
-	{
-		m_Bombs[i].countDown -= elapsed;
-		if (m_Bombs[i].countDown <= 0.f)
+		m_pMainCam->SetActive(true);
+		if (m_SceneContext.pInput->IsActionTriggered(CharacterPlaceBomb))
 		{
-			SpawnRaycasts(m_Bombs[i].object->GetTransform()->GetPosition());
-			SpawnParticles(m_Bombs[i]);
-			RemoveChild(m_Bombs[i].object);
-			m_Bombs.erase(m_Bombs.begin() + i);
-			SoundManager::Get()->GetSystem()->playSound(m_pSoundFx, m_pSoundEffectGroup, false, nullptr);
-		}
-	}
-	m_TextBombsPlaced = "Bombs currently placed: " + std::to_string(m_Bombs.size());
-
-	// kill particles
-	for (size_t i = 0; i < m_ActiveParticles.size(); i++)
-	{
-		m_ActiveParticles[i].countDown -= elapsed;
-		if (m_ActiveParticles[i].countDown <= 0.f)
-		{
-			RemoveChild(m_ActiveParticles[i].object);
-			m_ActiveParticles.erase(m_ActiveParticles.begin() + i);
-		}
-	}
-
-	if (m_KillPlayer)
-	{
-		TextRenderer::Get()->DrawText(m_pFont, StringUtil::utf8_decode(m_Text), m_TextPosition, m_TextColor);
-	}
-
-	TextRenderer::Get()->DrawText(m_pFont, StringUtil::utf8_decode(m_TextBombsPlaced), { 0.f, m_SceneContext.windowHeight - 30.f }, { 0.f ,0.f, 0.f, 1.f });
-
-	// SOUND
-	if (InputManager::IsKeyboardKey(InputState::pressed, VK_UP))
-	{
-		m_Volume += 0.1f;
-		if (m_Volume > 1.f)
-		{
-			m_Volume = 1.f;
+			SpawnBomb();
 		}
 
-		m_pSound2D->setVolume(m_Volume);
-	}
-
-	if (InputManager::IsKeyboardKey(InputState::pressed, VK_DOWN))
-	{
-		m_Volume -= 0.1f;
-		if (m_Volume < 0.f)
+		if (m_Time >= 0.f && m_Win != true && m_GamePauzed != true)
 		{
-			m_Volume = 0.f;
+			m_Time -= elapsed;
 		}
 
-		m_pSound2D->setVolume(m_Volume);
+		// kill bomb
+		for (size_t i = 0; i < m_Bombs.size(); i++)
+		{
+			m_Bombs[i].countDown -= elapsed;
+			if (m_Bombs[i].countDown <= 0.f)
+			{
+				SpawnRaycasts(m_Bombs[i].object->GetTransform()->GetPosition());
+				SpawnParticles(m_Bombs[i]);
+				RemoveChild(m_Bombs[i].object);
+				m_Bombs.erase(m_Bombs.begin() + i);
+				SoundManager::Get()->GetSystem()->playSound(m_pSoundFx, m_pSoundEffectGroup, false, nullptr);
+			}
+		}
+
+		// kill particles
+		for (size_t i = 0; i < m_ActiveParticles.size(); i++)
+		{
+			m_ActiveParticles[i].countDown -= elapsed;
+			if (m_ActiveParticles[i].countDown <= 0.f)
+			{
+				RemoveChild(m_ActiveParticles[i].object);
+				m_ActiveParticles.erase(m_ActiveParticles.begin() + i);
+			}
+		}
+
+		// kill
+		if (m_Time <= 0.f)
+		{
+			m_KillPlayer = true;
+		}
+		if (m_KillPlayer)
+		{
+			if (m_PostBlurAdded == false)
+			{
+				AddPostProcessingEffect(m_pPostBlur);
+				m_PostBlurAdded = true;
+			}
+			TextRenderer::Get()->DrawText(m_pFont, StringUtil::utf8_decode("YOU DIED!"), m_TextPosition, { 1.f, 0.f, 0.f, 1.f });
+		}
+
+		// win
+		if (m_Win)
+		{
+			//if (m_PostBlurAdded == false)
+			//{
+			//	AddPostProcessingEffect(m_pPostBlur);
+			//	m_PostBlurAdded = true;
+			//}
+			TextRenderer::Get()->DrawText(m_pFont, StringUtil::utf8_decode("YOU WIN!"), m_TextPosition, { 0.f, 0.f, 1.f, 1.f });
+		}
+
+		// TEXT
+		m_TextBombsPlaced = "Bombs currently placed: " + std::to_string(m_Bombs.size());
+		m_CurrentVolume = "Volume main theme: " + std::to_string(m_Volume * 100) + "%";
+		m_GameTimer = "Time Left For Level: " + std::to_string(m_Time) + "s";
+		TextRenderer::Get()->DrawText(m_pFont, StringUtil::utf8_decode(m_TextBombsPlaced), { 0.f, m_SceneContext.windowHeight - 30.f }, { 0.f ,0.f, 0.f, 1.f });
+		TextRenderer::Get()->DrawText(m_pFont, StringUtil::utf8_decode(m_CurrentVolume), { 0.f, m_SceneContext.windowHeight - 60.f }, { 0.f ,0.f, 0.f, 1.f });
+		TextRenderer::Get()->DrawText(m_pFont, StringUtil::utf8_decode(m_GameTimer), { m_SceneContext.windowWidth / 2.f - 200.f, 0.f }, { 0.f ,0.f, 0.f, 1.f });
+
+		// SOUND
+		if (InputManager::IsKeyboardKey(InputState::pressed, VK_UP))
+		{
+			m_Volume += 0.1f;
+			if (m_Volume > 1.f)
+			{
+				m_Volume = 1.f;
+			}
+
+			m_pSound2D->setVolume(m_Volume);
+		}
+
+		if (InputManager::IsKeyboardKey(InputState::pressed, VK_DOWN))
+		{
+			m_Volume -= 0.1f;
+			if (m_Volume < 0.f)
+			{
+				m_Volume = 0.f;
+			}
+
+			m_pSound2D->setVolume(m_Volume);
+		}
+
+		if (InputManager::IsKeyboardKey(InputState::pressed, 'P'))
+		{
+			m_GamePauzed = !m_GamePauzed;
+		}
+	}
+	if (m_MenuOn)
+	{
+		if (m_loadMainMenu == false)
+		{
+			MainMenu();
+			m_loadMainMenu = true;
+		}
+
+		// picking
+		if (InputManager::IsMouseButton(InputState::pressed, VK_LBUTTON))
+		{
+			PxVec3 hitPos{};
+			if (const auto pPickedObject = m_SceneContext.pCamera->Pick(CollisionGroup::None, hitPos))
+			{
+				if (pPickedObject->GetTag() == L"Start")
+				{
+					for (size_t i = 0; i < m_pMainMenu.size(); i++)
+					{
+						RemoveChild(m_pMainMenu[i]);
+					}
+					m_MenuOn = false;
+					m_loadMainMenu = false;
+				}
+				if (pPickedObject->GetTag() == L"End")
+				{
+
+				}
+			}
+		}
+
+		// cam top down
+		auto camEmpty = new GameObject();
+		auto cam = new CameraComponent();
+		camEmpty->GetTransform()->Translate(0.f, 85.f, 50.f);
+		camEmpty->GetTransform()->Rotate(90.f, 0.f, 0.f);
+		camEmpty->AddComponent(cam);
+		AddChild(camEmpty);
+		SetActiveCamera(cam);
+
+		m_pMainCam->SetActive(false);
+
+		// text
+		TextRenderer::Get()->DrawText(m_pFont, StringUtil::utf8_decode("Start"), { m_SceneContext.windowWidth / 2.f - 36.f, m_SceneContext.windowHeight / 2.f + 46.f }, { 0.f, 0.f, 0.f, 1.f });
+		TextRenderer::Get()->DrawText(m_pFont, StringUtil::utf8_decode("End"), { m_SceneContext.windowWidth / 2.f - 25.f, m_SceneContext.windowHeight / 2.f + 180.f }, { 0.f, 0.f, 0.f, 1.f });
+	}
+	if (m_GamePauzed)
+	{
+		if (m_loadPauzeMenu == false)
+		{
+			PauzeMenu();
+			m_loadPauzeMenu = true;
+		}
+
+		// cam top down
+		auto camEmpty = new GameObject();
+		auto cam = new CameraComponent();
+		camEmpty->GetTransform()->Translate(1000.f, 85.f, 50.f);
+		camEmpty->GetTransform()->Rotate(90.f, 0.f, 0.f);
+		camEmpty->AddComponent(cam);
+		AddChild(camEmpty);
+		SetActiveCamera(cam);
+
+		m_pMainCam->SetActive(false);
+
+		// picking
+		if (InputManager::IsMouseButton(InputState::pressed, VK_LBUTTON))
+		{
+			PxVec3 hitPos{};
+			if (const auto pPickedObject = cam->Pick(CollisionGroup::None, hitPos))
+			{
+				if (pPickedObject->GetTag() == L"MainMenu")
+				{
+					for (size_t i = 0; i < m_pPauzeMenu.size(); i++)
+					{
+						RemoveChild(m_pPauzeMenu[i]);
+					}
+					m_GamePauzed = false;
+					m_loadPauzeMenu = false;
+
+					m_MenuOn = true;
+				}
+				if (pPickedObject->GetTag() == L"End")
+				{
+
+				}
+				if (pPickedObject->GetTag() == L"Restart")
+				{
+
+				}
+			}
+		}
+
+		// text
+		TextRenderer::Get()->DrawText(m_pFont, StringUtil::utf8_decode("Main Menu"), { m_SceneContext.windowWidth / 2.f - 470.f, m_SceneContext.windowHeight / 2.f + 150.f }, { 0.f, 0.f, 0.f, 1.f });
+		TextRenderer::Get()->DrawText(m_pFont, StringUtil::utf8_decode("End"), { m_SceneContext.windowWidth / 2.f - 25.f, m_SceneContext.windowHeight / 2.f + 150.f }, { 0.f, 0.f, 0.f, 1.f });
+		TextRenderer::Get()->DrawText(m_pFont, StringUtil::utf8_decode("Restart"), { m_SceneContext.windowWidth / 2.f + 360.f, m_SceneContext.windowHeight / 2.f + 150.f }, { 0.f, 0.f, 0.f, 1.f });
+
+		TextRenderer::Get()->DrawText(m_pFont, StringUtil::utf8_decode("GOAL: get to the finnish in time beat 3 levels"), { m_SceneContext.windowWidth / 2.f - 500.f, m_SceneContext.windowHeight / 2.f - 25.f }, { 0.f, 0.f, 0.f, 1.f });
+		TextRenderer::Get()->DrawText(m_pFont, StringUtil::utf8_decode("GOAL: every level you beat you get + 20 sec"), { m_SceneContext.windowWidth / 2.f - 500.f, m_SceneContext.windowHeight / 2.f + 0.f }, { 0.f, 0.f, 0.f, 1.f });
+		TextRenderer::Get()->DrawText(m_pFont, StringUtil::utf8_decode("PAUSE: P"), { m_SceneContext.windowWidth / 2.f - 500.f, m_SceneContext.windowHeight / 2.f + 25.f }, { 0.f, 0.f, 0.f, 1.f });
+		TextRenderer::Get()->DrawText(m_pFont, StringUtil::utf8_decode("VOLUME: ARROW UP, ARROW DOWN"), { m_SceneContext.windowWidth / 2.f - 500.f, m_SceneContext.windowHeight / 2.f + 50.f }, { 0.f, 0.f, 0.f, 1.f });
+		TextRenderer::Get()->DrawText(m_pFont, StringUtil::utf8_decode("BOMBS (Max 3): SPACEBAR"), { m_SceneContext.windowWidth / 2.f - 500.f, m_SceneContext.windowHeight / 2.f + 75.f }, { 0.f, 0.f, 0.f, 1.f });
+		TextRenderer::Get()->DrawText(m_pFont, StringUtil::utf8_decode("MOVEMENT: W, A, S, D"), { m_SceneContext.windowWidth / 2.f - 500.f, m_SceneContext.windowHeight / 2.f + 100.f }, { 0.f, 0.f, 0.f, 1.f });
 	}
 }
 
@@ -195,7 +353,6 @@ void Bomber::InitLevel()
 	// ***********
 	// BOTTOM GRID
 	// ***********
-	GameObject* pLevelGrid{ new GameObject{} };
 	bool ColorGreen{ true };
 	XMFLOAT3 dimensions{ 1.f, 1.f, 1.f };
 	const float scale{ 5.f };
@@ -213,7 +370,7 @@ void Bomber::InitLevel()
 
 				pGroundObj->GetTransform()->Translate(static_cast<float>(x * scale), 0.f, static_cast<float>(y * scale) + 2.5f);
 				pGroundObj->GetTransform()->Scale(scale);
-				pLevelGrid->AddChild(pGroundObj);
+				m_pLevelGrid->AddChild(pGroundObj);
 			}
 			else
 			{
@@ -225,7 +382,7 @@ void Bomber::InitLevel()
 
 				pGroundObj->GetTransform()->Translate(static_cast<float>(x * scale), 0.f, static_cast<float>(y * scale) + 2.5f);
 				pGroundObj->GetTransform()->Scale(scale);
-				pLevelGrid->AddChild(pGroundObj);
+				m_pLevelGrid->AddChild(pGroundObj);
 			}
 			ColorGreen = !ColorGreen;
 		}
@@ -238,14 +395,13 @@ void Bomber::InitLevel()
 	pCubeActor->SetCollisionGroup(CollisionGroup::Group1);
 	pCubeActor->GetTransform()->Translate((dimensions.x * scale * m_GridWidth - scale) / 2.f, 0.f, (dimensions.z * scale * m_GridHeight - scale) / 2.f);
 
-	pLevelGrid->AddChild(pColisionObj);
-	pLevelGrid->GetTransform()->Translate(0.f, 0.f, 0.f);
-	AddChild(pLevelGrid);
+	m_pLevelGrid->AddChild(pColisionObj);
+	m_pLevelGrid->GetTransform()->Translate(0.f, 0.f, 0.f);
+	AddChild(m_pLevelGrid);
 
 	// ******
 	// BORDER
 	// ******
-	GameObject* pLevelBorder{ new GameObject{} };
 	int borderWidth{ m_GridWidth + 2 }; // +2 for the corners
 	int borderHeight{ m_GridHeight }; // only one needs +2
 	for (int x = 0; x < borderWidth; x++)
@@ -258,7 +414,7 @@ void Bomber::InitLevel()
 		pWallObjBottom->AddComponent(pWallModelBottom);
 
 		pWallObjBottom->GetTransform()->Translate(static_cast<float>(x) - 1.f, 1.f, -dimensions.z + 0.5f);
-		pLevelBorder->AddChild(pWallObjBottom);
+		m_pLevelBorder->AddChild(pWallObjBottom);
 
 		// top row
 		const auto pWallObjTop = new GameObject();
@@ -268,7 +424,7 @@ void Bomber::InitLevel()
 		pWallObjTop->AddComponent(pWallModelTop);
 
 		pWallObjTop->GetTransform()->Translate(static_cast<float>(x) - 1.f, 1.f, dimensions.z * m_GridHeight + 0.5f);
-		pLevelBorder->AddChild(pWallObjTop);
+		m_pLevelBorder->AddChild(pWallObjTop);
 	}
 	for (int y = 0; y < borderHeight; y++)
 	{
@@ -280,7 +436,7 @@ void Bomber::InitLevel()
 		pWallObjBottom->AddComponent(pWallModelBottom);
 
 		pWallObjBottom->GetTransform()->Translate(-dimensions.x, 1.f, static_cast<float>(y) + 0.5f);
-		pLevelBorder->AddChild(pWallObjBottom);
+		m_pLevelBorder->AddChild(pWallObjBottom);
 
 		// top row
 		const auto pWallObjTop = new GameObject();
@@ -290,7 +446,7 @@ void Bomber::InitLevel()
 		pWallObjTop->AddComponent(pWallModelTop);;
 
 		pWallObjTop->GetTransform()->Translate(dimensions.x * m_GridWidth, 1.f, static_cast<float>(y) + 0.5f);
-		pLevelBorder->AddChild(pWallObjTop);
+		m_pLevelBorder->AddChild(pWallObjTop);
 	}
 
 	const auto pColisionObjBottom = new GameObject();
@@ -317,15 +473,15 @@ void Bomber::InitLevel()
 	pCubeActorRight->SetCollisionGroup(CollisionGroup::Group1);
 	pCubeActorRight->GetTransform()->Translate(dimensions.x * scale * m_GridWidth, dimensions.y * scale, (dimensions.z * scale * m_GridHeight - scale) / 2.f);
 
-	pLevelBorder->AddChild(pColisionObjBottom);
-	pLevelBorder->AddChild(pColisionObjTop);
-	pLevelBorder->AddChild(pColisionObjLeft);
-	pLevelBorder->AddChild(pColisionObjRight);
+	m_pLevelBorder->AddChild(pColisionObjBottom);
+	m_pLevelBorder->AddChild(pColisionObjTop);
+	m_pLevelBorder->AddChild(pColisionObjLeft);
+	m_pLevelBorder->AddChild(pColisionObjRight);
 
 
-	pLevelBorder->GetTransform()->Translate(0.f, 0.f, 0.f);
-	pLevelBorder->GetTransform()->Scale(scale);
-	AddChild(pLevelBorder);
+	m_pLevelBorder->GetTransform()->Translate(0.f, 0.f, 0.f);
+	m_pLevelBorder->GetTransform()->Scale(scale);
+	AddChild(m_pLevelBorder);
 
 	// ****************
 	// MIDDLE OBSTICLES
@@ -739,4 +895,143 @@ void Bomber::SpawnRaycasts(XMFLOAT3 posBomb)
 			}
 		}
 	}
+}
+
+void Bomber::MainMenu()
+{
+	const auto pDefaultMaterial = PxGetPhysics().createMaterial(0.5f, 0.5f, 0.5f);
+	const auto pGroundMaterial1 = MaterialManager::Get()->CreateMaterial<DiffuseMaterial>();
+	pGroundMaterial1->SetDiffuseTexture(L"BomberMan/Textures/Background.webp");
+	const auto pButtonMaterial1 = MaterialManager::Get()->CreateMaterial<DiffuseMaterial>();
+	pButtonMaterial1->SetDiffuseTexture(L"BomberMan/Textures/RedPlastic.jpg");
+
+	// background
+	const auto pGroundObj = new GameObject();
+	const auto pGroundModel = new ModelComponent(L"Meshes/Cube.ovm");
+	pGroundModel->SetMaterial(pGroundMaterial1);
+	pGroundObj->AddComponent(pGroundModel);
+	pGroundObj->GetTransform()->Scale(100.f, 1.f, 80.f);
+	pGroundObj->GetTransform()->Translate(0.f, 20.f, 0.f);
+	pGroundObj->GetTransform()->Rotate(180.f, 0.f, 0.f);
+	AddChild(pGroundObj);
+	m_pMainMenu.push_back(pGroundObj);
+
+	// buttons
+	const auto ButtonObjStart = new GameObject();
+	const auto pButtonModelStart = new ModelComponent(L"Meshes/Cube.ovm");
+	pButtonModelStart->SetMaterial(pButtonMaterial1);
+	ButtonObjStart->AddComponent(pButtonModelStart);
+	ButtonObjStart->GetTransform()->Scale(20.f, 1.f, 8.f);
+	ButtonObjStart->GetTransform()->Translate(0.f, 21.f, 50.f);
+
+	const auto pColisionObjTop = new GameObject();
+	pColisionObjTop->SetTag(L"Start");
+	auto pCubeActorTop = pColisionObjTop->AddComponent(new RigidBodyComponent(true));
+	pCubeActorTop->AddCollider(PxBoxGeometry{ 20.f / 2.f, 1.f / 2.f, 8.f / 2.f }, *pDefaultMaterial);
+	pCubeActorTop->SetCollisionGroup(CollisionGroup::Group1);
+	pCubeActorTop->GetTransform()->Translate(0.f, 21.f, 46.f);
+
+	AddChild(ButtonObjStart);
+	AddChild(pColisionObjTop);
+	m_pMainMenu.push_back(ButtonObjStart);
+	m_pMainMenu.push_back(pColisionObjTop);
+
+	const auto ButtonObjEnd = new GameObject();
+	const auto pButtonModelEnd = new ModelComponent(L"Meshes/Cube.ovm");
+	pButtonModelEnd->SetMaterial(pButtonMaterial1);
+	ButtonObjEnd->AddComponent(pButtonModelEnd);
+	ButtonObjEnd->GetTransform()->Scale(20.f, 1.f, 8.f);
+	ButtonObjEnd->GetTransform()->Translate(0.f, 21.f, 40.f);
+
+	const auto pColisionObjBottom = new GameObject();
+	pColisionObjBottom->SetTag(L"End");
+	auto pCubeActorBottom = pColisionObjBottom->AddComponent(new RigidBodyComponent(true));
+	pCubeActorBottom->AddCollider(PxBoxGeometry{ 20.f / 2.f, 1.f / 2.f, 8.f / 2.f }, *pDefaultMaterial);
+	pCubeActorBottom->SetCollisionGroup(CollisionGroup::Group1);
+	pCubeActorBottom->GetTransform()->Translate(0.f, 21.f, 36.f);
+
+	AddChild(ButtonObjEnd);
+	AddChild(pColisionObjBottom);
+	m_pMainMenu.push_back(ButtonObjEnd);
+	m_pMainMenu.push_back(pColisionObjBottom);
+}
+
+void Bomber::PauzeMenu()
+{
+	const auto pDefaultMaterial = PxGetPhysics().createMaterial(0.5f, 0.5f, 0.5f);
+	const auto pGroundMaterial1 = MaterialManager::Get()->CreateMaterial<DiffuseMaterial>();
+	pGroundMaterial1->SetDiffuseTexture(L"BomberMan/Textures/Background.webp");
+	const auto pButtonMaterial1 = MaterialManager::Get()->CreateMaterial<DiffuseMaterial>();
+	pButtonMaterial1->SetDiffuseTexture(L"BomberMan/Textures/RedPlastic.jpg");
+
+	// background
+	const auto pGroundObj = new GameObject();
+	const auto pGroundModel = new ModelComponent(L"Meshes/Cube.ovm");
+	pGroundModel->SetMaterial(pGroundMaterial1);
+	pGroundObj->AddComponent(pGroundModel);
+	pGroundObj->GetTransform()->Scale(100.f, 1.f, 80.f);
+	pGroundObj->GetTransform()->Translate(1000.f, 20.f, 0.f);
+	pGroundObj->GetTransform()->Rotate(180.f, 0.f, 0.f);
+	AddChild(pGroundObj);
+	m_pPauzeMenu.push_back(pGroundObj);
+
+	// start
+	const auto ButtonObjStart = new GameObject();
+	const auto pButtonModelStart = new ModelComponent(L"Meshes/Cube.ovm");
+	pButtonModelStart->SetMaterial(pButtonMaterial1);
+	ButtonObjStart->AddComponent(pButtonModelStart);
+	ButtonObjStart->GetTransform()->Scale(20.f, 1.f, 8.f);
+	ButtonObjStart->GetTransform()->Translate(970.f, 21.f, 40.f);
+
+	const auto pColisionObjTop = new GameObject();
+	pColisionObjTop->SetTag(L"MainMenu");
+	auto pCubeActorTop = pColisionObjTop->AddComponent(new RigidBodyComponent(true));
+	pCubeActorTop->AddCollider(PxBoxGeometry{ 20.f / 2.f, 1.f / 2.f, 8.f / 2.f }, *pDefaultMaterial);
+	pCubeActorTop->SetCollisionGroup(CollisionGroup::Group1);
+	pCubeActorTop->GetTransform()->Translate(970.f, 21.f, 36.f);
+
+	AddChild(ButtonObjStart);
+	AddChild(pColisionObjTop);
+	m_pPauzeMenu.push_back(ButtonObjStart);
+	m_pPauzeMenu.push_back(pColisionObjTop);
+
+	// end
+	const auto ButtonObjEnd = new GameObject();
+	const auto pButtonModelEnd = new ModelComponent(L"Meshes/Cube.ovm");
+	pButtonModelEnd->SetMaterial(pButtonMaterial1);
+	ButtonObjEnd->AddComponent(pButtonModelEnd);
+	ButtonObjEnd->GetTransform()->Scale(20.f, 1.f, 8.f);
+	ButtonObjEnd->GetTransform()->Translate(1000.f, 21.f, 40.f);
+
+	const auto pColisionObjBottom = new GameObject();
+	pColisionObjBottom->SetTag(L"End");
+	auto pCubeActorBottom = pColisionObjBottom->AddComponent(new RigidBodyComponent(true));
+	pCubeActorBottom->AddCollider(PxBoxGeometry{ 20.f / 2.f, 1.f / 2.f, 8.f / 2.f }, *pDefaultMaterial);
+	pCubeActorBottom->SetCollisionGroup(CollisionGroup::Group1);
+	pCubeActorBottom->GetTransform()->Translate(1000.f, 21.f, 36.f);
+
+	AddChild(ButtonObjEnd);
+	AddChild(pColisionObjBottom);
+	m_pPauzeMenu.push_back(ButtonObjEnd);
+	m_pPauzeMenu.push_back(pColisionObjBottom);
+
+	// restart
+	const auto ButtonObjRestart = new GameObject();
+	const auto pButtonModelRestart = new ModelComponent(L"Meshes/Cube.ovm");
+	pButtonModelRestart->SetMaterial(pButtonMaterial1);
+	ButtonObjRestart->AddComponent(pButtonModelRestart);
+	ButtonObjRestart->GetTransform()->Scale(20.f, 1.f, 8.f);
+	ButtonObjRestart->GetTransform()->Translate(1030.f, 21.f, 40.f);
+
+	const auto pColisionObjRestart = new GameObject();
+	pColisionObjRestart->SetTag(L"Restart");
+	auto pCubeActorRestart = pColisionObjRestart->AddComponent(new RigidBodyComponent(true));
+	pCubeActorRestart->AddCollider(PxBoxGeometry{ 20.f / 2.f, 1.f / 2.f, 8.f / 2.f }, *pDefaultMaterial);
+	pCubeActorRestart->SetCollisionGroup(CollisionGroup::Group1);
+	pCubeActorRestart->GetTransform()->Translate(1030.f, 21.f, 36.f);
+
+	AddChild(ButtonObjRestart);
+	AddChild(pColisionObjRestart);
+	m_pPauzeMenu.push_back(ButtonObjRestart);
+	m_pPauzeMenu.push_back(pColisionObjRestart);
 }

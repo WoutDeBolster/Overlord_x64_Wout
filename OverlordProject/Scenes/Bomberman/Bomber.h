@@ -1,10 +1,11 @@
 #pragma once
 class Character;
 class PostGrayscale;
+class PostBlur;
 
 struct Bomb
 {
-	float countDown{ 3.f };
+	float countDown{ 2.f };
 	int explosionLenght{ 1 };
 	GameObject* object{ nullptr };
 };
@@ -45,6 +46,8 @@ private:
 	void SpawnParticles(Bomb bomb);
 	void SpawnBreakebles();
 	void SpawnRaycasts(XMFLOAT3 posBomb);
+	void MainMenu();
+	void PauzeMenu();
 
 	Character* m_pCharacter{};
 	enum InputIds
@@ -62,20 +65,32 @@ private:
 	int m_GridHeight{ 5 };
 
 	std::vector<Bomb> m_Bombs;
+	GameObject* m_pLevelGrid{ new GameObject() };
+	GameObject* m_pLevelBorder{ new GameObject() };
 	std::vector<TimedParticle> m_ActiveParticles;
 	std::vector<Breakeble> m_pBreakebleBlocks;
-	GameObject* m_pfinnish;
-	int m_MaxAmountBombs{ 10 };
+	GameObject* m_pfinnish{};
+	CameraComponent* m_pMainCam{};
+	int m_MaxAmountBombs{ 3 };
 	int m_ExplosionLenght{ 2 };
+
+	// menu
+	std::vector<GameObject*> m_pMainMenu;
+	bool m_loadMainMenu{ true };
+	bool m_MenuOn{ true };
+	std::vector<GameObject*> m_pPauzeMenu;
+	bool m_loadPauzeMenu{ false };
+	bool m_GamePauzed{ false };
+
+	float m_Time{ 100.f };
 
 	// text
 	SpriteFont* m_pFont{};
 
-	std::string m_Text{ "YOU DIED" };
 	std::string m_TextBombsPlaced{};
 	std::string m_GameTimer{};
+	std::string m_CurrentVolume{};
 	XMFLOAT2 m_TextPosition{};
-	XMFLOAT4 m_TextColor{ 1.f,0.f,0.f,1.f };
 
 	//sound
 	FMOD::Channel* m_pSound2D{};
@@ -86,5 +101,8 @@ private:
 
 	// post
 	PostGrayscale* m_pPostGrayscale{};
+	PostBlur* m_pPostBlur{};
+	bool m_PostGrayscaleAdded{ false };
+	bool m_PostBlurAdded{ false };
 };
 

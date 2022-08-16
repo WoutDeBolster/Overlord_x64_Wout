@@ -4,7 +4,7 @@
 #include "PostGrayscale.h"
 
 PostGrayscale::PostGrayscale() :
-	PostProcessingMaterial(L"Effects/Post/WhiteScale.fx")
+	PostProcessingMaterial(L"Effects/Post/Grayscale.fx")
 {
 }
 
